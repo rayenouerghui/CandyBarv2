@@ -1,0 +1,29 @@
+<RCC>
+    <qresource prefix="/">
+        <!-- Root QML -->
+        <file>example/qml/App.qml</file>
+        <file>example/qml/MainDisplay.qml</file>
+        <file>example/qml/DisplayView.qml</file>
+        <file>example/qml/WelcomeSplash.qml</file>
+        <file>example/qml/PublicQrOverlay.qml</file>
+        <file>example/qml/StaffQrOverlay.qml</file>
+        <file>example/qml/ConnectionBanner.qml</file>
+
+        <!-- Global singleton -->
+        <file>example/qml/global/DisplayState.qml</file>
+        <file>example/qml/global/qmldir</file>
+
+        <!-- Assets: kept -->
+        <file>example/res/image/genical.jpg</file>
+        <file>example/res/image/favicon.ico</file>
+        <file>example/res/image/noise_texture.png</file>
+
+        <!-- Fonts: DM Mono for tabular number display -->
+        <file>example/res/font/DMMono-Regular.ttf</file>
+        <file>example/res/font/DMMono-Medium.ttf</file>
+
+        <!-- i18n (kept for potential future use) -->
+        <file>example/i18n/example_en_US.qm</file>
+        <file>example/i18n/example_zh_CN.qm</file>
+    </qresource>
+</RCC>

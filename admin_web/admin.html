@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+  <title>CandyBar Admin</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:      #0b0d10;
+      --surface: rgba(255,255,255,0.05);
+      --surface2: rgba(255,255,255,0.07);
+      --border:  rgba(255,255,255,0.10);
+      --accent:  #0078D4;
+      --text:    rgba(255,255,255,0.95);
+      --text2:   rgba(255,255,255,0.42);
+      --text3:   rgba(255,255,255,0.28);
+      --r-card:  12px;
+      --r-chip:  10px;
+      --r-outer: 18px;
+    }
+    html, body {
+      min-height: 100%; background: var(--bg);
+      color: var(--text);
+      font-family: "Inter", "SF Pro Display", system-ui, sans-serif;
+      font-size: 15px;
+    }
+    body::before {
+      content:""; position:fixed; inset:0;
+      background-image: url('/uploads/noise_texture.png');
+      background-repeat: repeat; opacity: 0.035;
+      pointer-events: none; z-index:0;
+    }
+    /* ── screens ──────────────────────────────────────────────────────── */
+    .screen { position:relative; z-index:1; }
+    #screen_pin  { display:flex; }
+    #screen_main { display:none; }
+
+    /* ── PIN screen ──────────────────────────────────────────────────── */
+    #screen_pin {
+      min-height:100dvh; flex-direction:column;
+      align-items:center; justify-content:center; padding:24px;
+    }
+    .pin-title { font-size:18px; font-weight:600; margin-bottom:8px; }
+    .pin-sub   { font-size:13px; color:var(--text2); margin-bottom:32px; }
+    .pin-dots  { display:flex; gap:12px; margin-bottom:32px; }
+    .pin-dot   {
+      width:12px; height:12px; border-radius:50%;
+      background: var(--border); transition: background .2s;
+    }
+    .pin-dot.filled { background: var(--accent); }
+    .pin-error { font-size:12px; color:#f87171; min-height:18px; margin-top:-16px; margin-bottom:16px; }
+    .keypad { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; width:min(280px,85vw); }
+    .key {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-chip); padding:18px;
+      font-size:22px; font-weight:500; text-align:center;
+      cursor:pointer; user-select:none;
+      transition: transform .1s ease, background .1s ease;
+    }
+    .key:active { transform:scale(0.93); background: var(--surface2); }
+    .key.wide { grid-column: span 2; font-size:14px; }
+    .key.del  { font-size:16px; }
+
+    /* ── main editor ────────────────────────────────────────────────── */
+    #screen_main { flex-direction:column; padding:16px 16px 80px; gap:16px; }
+    .section-label {
+      font-size:10px; letter-spacing:.14em; text-transform:uppercase;
+      color:var(--text3); margin-bottom:8px;
+    }
+    /* live preview */
+    .preview-wrap {
+      border-radius:var(--r-card); overflow:hidden;
+      aspect-ratio: 16/9; background:#000;
+      border: 1px solid var(--border);
+      position:relative;
+    }
+    .preview-bg {
+      position:absolute; inset:0;
+      background:var(--bg);
+    }
+    .preview-noise {
+      position:absolute; inset:0;
+      background-image: url('/uploads/noise_texture.png');
+      background-repeat:repeat; opacity:.035;
+    }
+    .preview-glow-top {
+      position:absolute; top:-40%; left:50%; transform:translateX(-50%);
+      width:80%; height:60%; border-radius:50%;
+      background:radial-gradient(ellipse,rgba(255,255,255,.04) 0%,transparent 70%);
+    }
+    .preview-glow-accent {
+      position:absolute; bottom:-20%; right:-10%;
+      width:50%; height:60%; border-radius:50%;
+      background:radial-gradient(circle,rgba(0,0,0,.12) 0%,transparent 70%);
+    }
+    .preview-content {
+      position:absolute; inset:0;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      gap:4px;
+    }
+    .preview-label {
+      font-size:8px; letter-spacing:.2em; text-transform:uppercase;
+      color:rgba(255,255,255,.42);
+    }
+    .preview-number {
+      font-family: "DM Mono","Roboto Mono",monospace;
+      font-size:40px; font-weight:500; color:#fff; line-height:1;
+    }
+    .preview-underline { height:2px; width:32px; border-radius:1px; }
+    .preview-facility  { font-size:8px; color:rgba(255,255,255,.28); }
+
+    /* number stepper */
+    .stepper { display:flex; gap:0; border-radius:var(--r-chip); overflow:hidden; border:1px solid var(--border); }
+    .stepper-btn {
+      flex:0 0 56px; height:56px; background:var(--surface);
+      font-size:26px; border:none; color:var(--text);
+      cursor:pointer; display:flex; align-items:center; justify-content:center;
+      transition: transform .1s ease, background .1s ease;
+    }
+    .stepper-btn:active { transform:scale(0.93); background:var(--surface2); }
+    .stepper-num {
+      flex:1; height:56px; background:var(--surface2);
+      font-family:"DM Mono","Roboto Mono",monospace;
+      font-size:24px; font-weight:500; color:var(--text);
+      border:none; text-align:center; outline:none;
+    }
+
+    /* layout thumbnails */
+    .layout-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+    .layout-thumb {
+      border:2px solid var(--border); border-radius:var(--r-chip);
+      padding:8px 4px 6px; cursor:pointer; text-align:center;
+      background:var(--surface);
+      transition: border-color .2s, transform .1s;
+    }
+    .layout-thumb:active { transform:scale(0.94); }
+    .layout-thumb.active { border-color:var(--accent); }
+    .layout-thumb svg { display:block; margin:0 auto 4px; }
+    .layout-thumb span { font-size:11px; color:var(--text2); }
+    .layout-thumb.active span { color:var(--text); }
+
+    /* accent swatches */
+    .swatches { display:flex; gap:10px; flex-wrap:wrap; }
+    .swatch {
+      width:34px; height:34px; border-radius:50%;
+      cursor:pointer; border:2px solid transparent;
+      transition: transform .1s ease, border-color .2s;
+    }
+    .swatch:active  { transform:scale(0.88); }
+    .swatch.active  { border-color:rgba(255,255,255,0.7); }
+
+    /* text inputs */
+    textarea, input[type=text], input[type=password] {
+      width:100%; background:var(--surface);
+      border:1px solid var(--border); border-radius:var(--r-chip);
+      color:var(--text); padding:12px 14px; font-size:14px;
+      font-family:inherit; outline:none; resize:vertical;
+      transition: border-color .2s;
+    }
+    textarea:focus, input[type=text]:focus, input[type=password]:focus {
+      border-color:var(--accent);
+    }
+
+    /* logo upload */
+    .upload-area {
+      border:1px dashed var(--border); border-radius:var(--r-chip);
+      padding:20px; text-align:center; cursor:pointer;
+      transition: border-color .2s;
+    }
+    .upload-area:hover { border-color:var(--accent); }
+    .upload-area img  { max-height:60px; max-width:100%; border-radius:6px; margin-bottom:6px; }
+    .upload-hint { font-size:12px; color:var(--text3); }
+
+    /* card wrapper */
+    .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-card); padding:16px; }
+
+    /* device stats */
+    .stats-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .stat-item  { background:var(--surface2); border-radius:var(--r-chip); padding:10px 12px; }
+    .stat-label { font-size:10px; color:var(--text3); margin-bottom:2px; letter-spacing:.06em; }
+    .stat-value { font-size:16px; font-weight:600; font-family:"DM Mono",monospace; }
+
+    /* apply button */
+    .apply-bar {
+      position:fixed; bottom:0; left:0; right:0; z-index:100;
+      padding:12px 16px; background:rgba(11,13,16,.92);
+      border-top:1px solid var(--border);
+      backdrop-filter:blur(8px);
+    }
+    .apply-btn {
+      width:100%; padding:16px; border:none; border-radius:var(--r-chip);
+      background:var(--accent); color:#fff;
+      font-size:16px; font-weight:600; cursor:pointer;
+      transition: opacity .2s, transform .1s;
+    }
+    .apply-btn:active  { transform:scale(0.97); opacity:.88; }
+    .apply-btn:disabled { opacity:.4; cursor:default; }
+
+    /* toast */
+    #toast {
+      position:fixed; bottom:80px; left:50%; transform:translateX(-50%);
+      background:#1a1f2e; border:1px solid var(--border);
+      color:var(--text); padding:8px 18px; border-radius:20px;
+      font-size:13px; opacity:0; pointer-events:none;
+      transition:opacity .25s; white-space:nowrap; z-index:200;
+    }
+    #toast.show { opacity:1; }
+
+    .conn-dot {
+      display:inline-block; width:8px; height:8px; border-radius:50%;
+      background:#555; margin-right:6px; vertical-align:middle;
+      transition:background .3s;
+    }
+    .conn-dot.on { background:#22c55e; }
+    .conn-dot.off { background:#f87171; }
+
+    header.main-header {
+      position:relative; z-index:2;
+      display:flex; align-items:center; justify-content:space-between;
+      padding:14px 16px 0;
+    }
+    header.main-header h1 { font-size:16px; font-weight:600; }
+    header.main-header .conn { font-size:12px; color:var(--text2); }
+  </style>
+</head>
+<body>
+
+<!-- ══ PIN SCREEN ══════════════════════════════════════════════════════ -->
+<div id="screen_pin" class="screen">
+  <div class="pin-title">Staff Access</div>
+  <div class="pin-sub">Enter your PIN to continue</div>
+  <div class="pin-dots">
+    <div class="pin-dot" id="d0"></div>
+    <div class="pin-dot" id="d1"></div>
+    <div class="pin-dot" id="d2"></div>
+    <div class="pin-dot" id="d3"></div>
+  </div>
+  <div class="pin-error" id="pin_error"></div>
+  <div class="keypad">
+    <div class="key" onclick="pinKey('1')">1</div>
+    <div class="key" onclick="pinKey('2')">2</div>
+    <div class="key" onclick="pinKey('3')">3</div>
+    <div class="key" onclick="pinKey('4')">4</div>
+    <div class="key" onclick="pinKey('5')">5</div>
+    <div class="key" onclick="pinKey('6')">6</div>
+    <div class="key" onclick="pinKey('7')">7</div>
+    <div class="key" onclick="pinKey('8')">8</div>
+    <div class="key" onclick="pinKey('9')">9</div>
+    <div class="key del" onclick="pinDel()">⌫</div>
+    <div class="key" onclick="pinKey('0')">0</div>
+    <div class="key" onclick="pinSubmit()">↵</div>
+  </div>
+</div>
+
+<!-- ══ MAIN EDITOR ═════════════════════════════════════════════════════ -->
+<div id="screen_main" class="screen">
+
+  <header class="main-header">
+    <h1>Display Editor</h1>
+    <span class="conn">
+      <span class="conn-dot" id="conn_dot"></span>
+      <span id="conn_label">Connecting…</span>
+    </span>
+  </header>
+
+  <div style="position:relative;z-index:1;padding:16px 16px 80px;display:flex;flex-direction:column;gap:16px;">
+
+    <!-- Live preview -->
+    <div>
+      <div class="section-label">Live Preview</div>
+      <div class="preview-wrap">
+        <div class="preview-bg" id="prev_bg"></div>
+        <div class="preview-noise"></div>
+        <div class="preview-glow-top"></div>
+        <div class="preview-glow-accent" id="prev_accent_glow"></div>
+        <div class="preview-content">
+          <div class="preview-label">NOW SERVING</div>
+          <div class="preview-number" id="prev_number">001</div>
+          <div class="preview-underline" id="prev_underline"></div>
+          <div class="preview-facility" id="prev_facility"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Queue number -->
+    <div class="card">
+      <div class="section-label">Queue Number</div>
+      <div class="stepper">
+        <button class="stepper-btn" onclick="adjustNum(-1)">−</button>
+        <input class="stepper-num" id="num_input" type="number" min="0" max="999" value="1"
+               oninput="updatePreviewNumber()"/>
+        <button class="stepper-btn" onclick="adjustNum(1)">＋</button>
+      </div>
+    </div>
+
+    <!-- Layout -->
+    <div class="card">
+      <div class="section-label">Layout</div>
+      <div class="layout-grid">
+        <div class="layout-thumb active" data-layout="Classic" onclick="setLayout(this)">
+          <svg width="48" height="30" viewBox="0 0 48 30" fill="none">
+            <rect width="48" height="30" rx="3" fill="rgba(255,255,255,0.05)"/>
+            <rect x="4" y="4" width="40" height="5" rx="2" fill="rgba(255,255,255,0.18)"/>
+            <rect x="14" y="11" width="20" height="10" rx="2" fill="rgba(255,255,255,0.30)"/>
+            <rect x="4" y="23" width="40" height="4" rx="2" fill="rgba(255,255,255,0.12)"/>
+          </svg>
+          <span>Classic</span>
+        </div>
+        <div class="layout-thumb" data-layout="Split" onclick="setLayout(this)">
+          <svg width="48" height="30" viewBox="0 0 48 30" fill="none">
+            <rect width="48" height="30" rx="3" fill="rgba(255,255,255,0.05)"/>
+            <rect x="0" y="0" width="27" height="30" rx="3" fill="rgba(255,255,255,0.10)"/>
+            <rect x="8" y="10" width="12" height="10" rx="2" fill="rgba(255,255,255,0.35)"/>
+            <rect x="30" y="6"  width="13" height="3" rx="1" fill="rgba(255,255,255,0.20)"/>
+            <rect x="30" y="11" width="10" height="3" rx="1" fill="rgba(255,255,255,0.14)"/>
+            <rect x="30" y="16" width="8"  height="3" rx="1" fill="rgba(255,255,255,0.09)"/>
+          </svg>
+          <span>Split</span>
+        </div>
+        <div class="layout-thumb" data-layout="Centered" onclick="setLayout(this)">
+          <svg width="48" height="30" viewBox="0 0 48 30" fill="none">
+            <rect width="48" height="30" rx="3" fill="rgba(255,255,255,0.05)"/>
+            <rect x="18" y="4"  width="12" height="5" rx="2" fill="rgba(255,255,255,0.18)"/>
+            <rect x="10" y="11" width="28" height="12" rx="2" fill="rgba(255,255,255,0.30)"/>
+            <rect x="16" y="25" width="16" height="3" rx="1" fill="rgba(255,255,255,0.12)"/>
+          </svg>
+          <span>Centered</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Accent color -->
+    <div class="card">
+      <div class="section-label">Accent Color</div>
+      <div class="swatches" id="swatches">
+        <div class="swatch active" style="background:#0078D4" data-color="#0078D4" onclick="setAccent(this)"></div>
+        <div class="swatch" style="background:#C0392B" data-color="#C0392B" onclick="setAccent(this)"></div>
+        <div class="swatch" style="background:#2ECC71" data-color="#2ECC71" onclick="setAccent(this)"></div>
+        <div class="swatch" style="background:#9B59B6" data-color="#9B59B6" onclick="setAccent(this)"></div>
+        <div class="swatch" style="background:#E67E22" data-color="#E67E22" onclick="setAccent(this)"></div>
+        <div class="swatch" style="background:#1ABC9C" data-color="#1ABC9C" onclick="setAccent(this)"></div>
+        <div class="swatch" style="background:#F1C40F" data-color="#F1C40F" onclick="setAccent(this)"></div>
+        <div class="swatch" style="background:#E84393" data-color="#E84393" onclick="setAccent(this)"></div>
+      </div>
+    </div>
+
+    <!-- Logo upload -->
+    <div class="card">
+      <div class="section-label">Logo</div>
+      <label class="upload-area" id="upload_area" for="logo_input">
+        <img id="logo_preview" src="" alt="" style="display:none"/>
+        <div class="upload-hint" id="upload_hint">Tap to upload logo (PNG / SVG / JPG, max 2 MB)</div>
+      </label>
+      <input type="file" id="logo_input" accept=".png,.jpg,.jpeg,.svg"
+             style="display:none" onchange="uploadLogo(this)"/>
+    </div>
+
+    <!-- Banner text -->
+    <div class="card">
+      <div class="section-label">Banner / Info Text</div>
+      <textarea id="banner_input" rows="2" placeholder="Welcome message…"></textarea>
+    </div>
+
+    <!-- Facility name -->
+    <div class="card">
+      <div class="section-label">Facility Name</div>
+      <input type="text" id="facility_input" placeholder="Your business name"/>
+    </div>
+
+    <!-- Change PIN -->
+    <div class="card">
+      <div class="section-label">Change Admin PIN</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="password" id="new_pin" placeholder="New 4-digit PIN"
+               maxlength="4" inputmode="numeric" style="flex:1"/>
+        <button onclick="changePin()"
+          style="padding:12px 16px;background:var(--surface2);border:1px solid var(--border);
+                 border-radius:var(--r-chip);color:var(--text);cursor:pointer;white-space:nowrap;
+                 transition:transform .1s" onmousedown="this.style.transform='scale(0.94)'"
+          onmouseup="this.style.transform=''">Save PIN</button>
+      </div>
+    </div>
+
+    <!-- Device stats -->
+    <div class="card" id="stats_card">
+      <div class="section-label">Device Status</div>
+      <div class="stats-grid" id="stats_grid">
+        <div class="stat-item"><div class="stat-label">Uptime</div><div class="stat-value" id="s_uptime">—</div></div>
+        <div class="stat-item"><div class="stat-label">Sessions</div><div class="stat-value" id="s_sessions">—</div></div>
+        <div class="stat-item"><div class="stat-label">Number Changes</div><div class="stat-value" id="s_changes">—</div></div>
+        <div class="stat-item"><div class="stat-label">Last Restart</div><div class="stat-value" id="s_restart">—</div></div>
+      </div>
+    </div>
+
+  </div><!-- end editor content -->
+
+  <!-- Fixed apply bar -->
+  <div class="apply-bar">
+    <button class="apply-btn" id="apply_btn" onclick="applyAll()">Apply to display</button>
+  </div>
+
+</div><!-- end screen_main -->
+
+<div id="toast"></div>
+
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+<script>
+/* ── State ───────────────────────────────────────────────────────────── */
+let pinBuffer = '';
+let currentAccent = '#0078D4';
+let currentLayout = 'Classic';
+let mqttClient = null;
+
+/* ── PIN screen ─────────────────────────────────────────────────────── */
+function pinKey(d) {
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += d;
+  updatePinDots();
+  if (pinBuffer.length === 4) setTimeout(pinSubmit, 120);
+}
+function pinDel() {
+  pinBuffer = pinBuffer.slice(0, -1);
+  updatePinDots();
+}
+function updatePinDots() {
+  for (let i = 0; i < 4; i++) {
+    document.getElementById('d' + i).classList.toggle('filled', i < pinBuffer.length);
+  }
+}
+async function pinSubmit() {
+  if (!pinBuffer) return;
+  try {
+    const r = await fetch('/api/pin', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({pin: pinBuffer})
+    });
+    const d = await r.json();
+    if (d.ok) {
+      document.getElementById('screen_pin').style.display = 'none';
+      document.getElementById('screen_main').style.display = 'flex';
+      document.getElementById('screen_main').style.flexDirection = 'column';
+      initEditor();
+    } else {
+      document.getElementById('pin_error').textContent = 'Incorrect PIN';
+      pinBuffer = '';
+      updatePinDots();
+      setTimeout(() => { document.getElementById('pin_error').textContent = ''; }, 2000);
+    }
+  } catch(e) {
+    document.getElementById('pin_error').textContent = 'Server error';
+    pinBuffer = '';
+    updatePinDots();
+  }
+}
+
+/* ── Editor init ────────────────────────────────────────────────────── */
+async function initEditor() {
+  // Load state
+  try {
+    const r = await fetch('/api/state');
+    const d = await r.json();
+    document.getElementById('num_input').value     = parseInt(d.currentNumber) || 1;
+    document.getElementById('banner_input').value  = d.bannerText   || '';
+    document.getElementById('facility_input').value = d.facilityName || '';
+    document.getElementById('prev_facility').textContent = d.facilityName || '';
+    document.getElementById('prev_number').textContent   = d.currentNumber || '001';
+
+    // Layout
+    if (d.layoutType) {
+      document.querySelectorAll('.layout-thumb').forEach(el => {
+        el.classList.toggle('active', el.dataset.layout === d.layoutType);
+      });
+      currentLayout = d.layoutType;
+    }
+
+    // Accent
+    if (d.accentColor) applyAccentLocal(d.accentColor);
+
+    // Logo
+    if (d.logoUrl) {
+      const img = document.getElementById('logo_preview');
+      img.src = d.logoUrl; img.style.display = 'block';
+      document.getElementById('upload_hint').style.display = 'none';
+    }
+  } catch(e) {}
+
+  // Load stats
+  loadStats();
+  setInterval(loadStats, 30000);
+
+  // MQTT
+  initMqtt();
+}
+
+async function loadStats() {
+  try {
+    const r = await fetch('/api/stats');
+    const d = await r.json();
+    document.getElementById('s_uptime').textContent   = d.uptime        || '—';
+    document.getElementById('s_sessions').textContent = d.session_count || '—';
+    document.getElementById('s_changes').textContent  = d.number_change_count || '0';
+    const ts = d.last_restart_ts;
+    if (ts) {
+      const dt = new Date(ts * 1000);
+      document.getElementById('s_restart').textContent =
+        dt.toLocaleDateString() + ' ' + dt.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+    }
+  } catch(e) {}
+}
+
+/* ── MQTT connection ─────────────────────────────────────────────────── */
+function initMqtt() {
+  const BROKER = `ws://${location.hostname}:8083/mqtt`;
+  mqttClient = mqtt.connect(BROKER, {
+    clientId: 'admin-' + Math.random().toString(16).slice(2),
+    reconnectPeriod: 3000,
+  });
+  const dot   = document.getElementById('conn_dot');
+  const label = document.getElementById('conn_label');
+  mqttClient.on('connect', () => {
+    dot.className = 'conn-dot on'; label.textContent = 'Live';
+    mqttClient.subscribe('display/#');
+  });
+  mqttClient.on('close',     () => { dot.className='conn-dot off'; label.textContent='Disconnected'; });
+  mqttClient.on('reconnect', () => { dot.className='conn-dot off'; label.textContent='Reconnecting…'; });
+  mqttClient.on('message', (topic, msg) => {
+    const key = topic.replace('display/', '');
+    const val = msg.toString();
+    // Mirror incoming changes to preview (another staff device may have changed)
+    if (key === 'currentNumber') {
+      document.getElementById('num_input').value = parseInt(val) || 0;
+      document.getElementById('prev_number').textContent = val;
+    }
+    if (key === 'accentColor') applyAccentLocal(val);
+    if (key === 'facilityName') document.getElementById('prev_facility').textContent = val;
+    if (key === 'layoutType') {
+      document.querySelectorAll('.layout-thumb').forEach(el =>
+        el.classList.toggle('active', el.dataset.layout === val));
+      currentLayout = val;
+    }
+  });
+}
+
+function publish(topic, payload) {
+  // Always go through the server /api/publish so persistence is updated
+  return fetch('/api/publish', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({topic, payload: String(payload)})
+  });
+}
+
+/* ── Controls ────────────────────────────────────────────────────────── */
+function adjustNum(d) {
+  const el = document.getElementById('num_input');
+  const v  = Math.max(0, Math.min(999, (parseInt(el.value) || 0) + d));
+  el.value = v;
+  updatePreviewNumber();
+}
+function updatePreviewNumber() {
+  const v = String(parseInt(document.getElementById('num_input').value)||0).padStart(3,'0');
+  document.getElementById('prev_number').textContent = v;
+}
+
+function setLayout(el) {
+  document.querySelectorAll('.layout-thumb').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  currentLayout = el.dataset.layout;
+}
+
+function setAccent(el) {
+  document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  applyAccentLocal(el.dataset.color);
+}
+function applyAccentLocal(hex) {
+  currentAccent = hex;
+  document.documentElement.style.setProperty('--accent', hex);
+  document.getElementById('prev_underline').style.background = hex;
+  // Tint accent glow in preview
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  document.getElementById('prev_accent_glow').style.background =
+    `radial-gradient(circle,rgba(${r},${g},${b},0.18) 0%,transparent 70%)`;
+  // Sync swatch selection if hex matches
+  document.querySelectorAll('.swatch').forEach(s => {
+    s.classList.toggle('active', s.dataset.color.toLowerCase() === hex.toLowerCase());
+  });
+}
+
+async function uploadLogo(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 2*1024*1024) { toast('File too large (max 2 MB)'); return; }
+  const fd = new FormData();
+  fd.append('logo', file);
+  try {
+    const r = await fetch('/api/logo', {method:'POST', body:fd});
+    const d = await r.json();
+    if (d.ok) {
+      const img = document.getElementById('logo_preview');
+      img.src = d.url + '?' + Date.now();
+      img.style.display = 'block';
+      document.getElementById('upload_hint').style.display = 'none';
+      toast('Logo uploaded');
+    } else {
+      toast('Upload failed: ' + (d.error || 'unknown'));
+    }
+  } catch(e) { toast('Upload error'); }
+}
+
+async function changePin() {
+  const val = document.getElementById('new_pin').value.trim();
+  if (!/^\d{4}$/.test(val)) { toast('PIN must be exactly 4 digits'); return; }
+  await publish('display/adminPin', val);
+  document.getElementById('new_pin').value = '';
+  toast('PIN updated');
+}
+
+/* ── Apply all ───────────────────────────────────────────────────────── */
+async function applyAll() {
+  const btn = document.getElementById('apply_btn');
+  btn.disabled = true;
+  const num     = String(parseInt(document.getElementById('num_input').value)||0).padStart(3,'0');
+  const banner  = document.getElementById('banner_input').value;
+  const facility = document.getElementById('facility_input').value;
+
+  await Promise.all([
+    publish('display/currentNumber', num),
+    publish('display/layoutType',    currentLayout),
+    publish('display/accentColor',   currentAccent),
+    publish('display/bannerText',    banner),
+    publish('display/facilityName',  facility),
+  ]);
+  toast('Applied to display ✓');
+  setTimeout(() => { btn.disabled = false; }, 1200);
+}
+
+/* ── Toast ────────────────────────────────────────────────────────────── */
+let _toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+</script>
+</body>
+</html>

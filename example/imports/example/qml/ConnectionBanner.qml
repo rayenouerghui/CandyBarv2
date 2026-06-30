@@ -2,44 +2,42 @@ import QtQuick 2.15
 import "global"
 
 // ── ConnectionBanner ──────────────────────────────────────────────────────
-// Shown when MQTT is disconnected. Small, unobtrusive pill at the bottom.
-// Never replaces the display content — last known good state stays visible.
+// Shown when MQTT is disconnected. Bottom-centered status pill.
+// Pill geometry from material-components-qml NodeGraphPage.qml (radius 14,
+// padded label). Fade timing follows Snackbar asymmetric show/hide pattern.
 
 Item {
     id: root
-    width: pill.width + 4
-    height: pill.height + 4
 
-    opacity: 0
-    // Fades in/out when visible changes
-    onVisibleChanged: {
-        if (visible) {
-            opacity = 0
-            fade_in.start()
-        } else {
-            fade_out.start()
+    readonly property int dur_micro: 150
+    readonly property int dur_std:  300
+    readonly property int dur_full: 600
+
+    width: pill.width
+    height: pill.height
+
+    opacity: visible ? 1 : 0
+    Behavior on opacity {
+        NumberAnimation {
+            duration: visible ? root.dur_std : root.dur_micro
+            easing.type: visible ? Easing.OutCubic : Easing.InCubic
         }
     }
 
-    NumberAnimation { id: fade_in;  target: root; property: "opacity"; to: 1; duration: 300; easing.type: Easing.OutCubic }
-    NumberAnimation { id: fade_out; target: root; property: "opacity"; to: 0; duration: 300; easing.type: Easing.InCubic }
-
     Rectangle {
         id: pill
-        anchors.centerIn: parent
-        radius: 20
-        color: Qt.rgba(0, 0, 0, 0.65)
+        radius: 14
+        color: Qt.rgba(0, 0, 0, 0.72)
         border.width: 1
         border.color: Qt.rgba(1, 1, 1, 0.10)
-        width: row.implicitWidth + 24
-        height: 32
+        width: row.implicitWidth + 26
+        height: row.implicitHeight + 12
 
         Row {
             id: row
             anchors.centerIn: parent
             spacing: 8
 
-            // Pulsing dot
             Rectangle {
                 width: 6; height: 6; radius: 3
                 color: "#f59e0b"
@@ -47,8 +45,8 @@ Item {
                 SequentialAnimation on opacity {
                     loops: Animation.Infinite
                     running: root.visible
-                    NumberAnimation { to: 0.3; duration: 600; easing.type: Easing.InOutSine }
-                    NumberAnimation { to: 1.0; duration: 600; easing.type: Easing.InOutSine }
+                    NumberAnimation { to: 0.35; duration: root.dur_full; easing.type: Easing.InOutSine }
+                    NumberAnimation { to: 1.0;  duration: root.dur_full; easing.type: Easing.InOutSine }
                 }
             }
 
@@ -57,8 +55,9 @@ Item {
                 text: DisplayState.mqttStatus
                 font.family: DisplayState.uiFont
                 font.pixelSize: 12
+                font.weight: Font.Medium
                 color: "#FFFFFF"
-                opacity: 0.60
+                opacity: 0.42
             }
         }
     }

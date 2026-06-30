@@ -4,19 +4,21 @@ import "global"
 
 // ── PublicQrOverlay ───────────────────────────────────────────────────────
 // Always-visible small QR in the bottom-left corner.
-// Links to the public read-only tracking page.
-// Compact (96px QR) so it doesn't compete with the number for visual weight.
+// Card chrome follows material-components-qml Card.qml (radius 12, 1px border,
+// 16px padding rhythm) adapted to the dark kiosk surface system.
 
 Item {
     id: root
-    width: 128
-    height: 156
+    width: 136
+    height: 168
 
-    // Frosted card
+    readonly property int pad: 14
+    readonly property int qrSize: 88
+
     Rectangle {
         anchors.fill: parent
-        radius: 14
-        color: Qt.rgba(0, 0, 0, 0.55)
+        radius: 12
+        color: Qt.rgba(0, 0, 0, 0.72)
         border.width: 1
         border.color: Qt.rgba(1, 1, 1, 0.10)
     }
@@ -24,40 +26,48 @@ Item {
     Column {
         anchors {
             fill: parent
-            margins: 10
+            margins: root.pad
         }
-        spacing: 6
+        spacing: 8
 
         Text {
             width: parent.width
             horizontalAlignment: Text.AlignHCenter
-            text: "Track your queue"
+            text: "TRACK YOUR QUEUE"
             font.family: DisplayState.uiFont
-            font.pixelSize: 10
+            font.pixelSize: 9
+            font.weight: Font.Medium
+            font.letterSpacing: 1.2
             color: "#FFFFFF"
-            opacity: 0.55
+            opacity: 0.42
         }
 
-        FluQRCode {
+        // QR on white pad — improves scan contrast and matches physical sticker affordance
+        Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
-            size: 96
-            text: DisplayState.publicUrl
-            color: "#000000"
-            bgColor: "#FFFFFF"
-            margins: 0
+            width: root.qrSize + 8
+            height: root.qrSize + 8
+            radius: 6
+            color: "#FFFFFF"
+
+            FluQRCode {
+                anchors.centerIn: parent
+                size: root.qrSize
+                text: DisplayState.publicUrl
+                color: "#000000"
+                bgColor: "#FFFFFF"
+                margins: 0
+            }
         }
 
         Text {
             width: parent.width
             horizontalAlignment: Text.AlignHCenter
-            text: DisplayState.publicUrl
+            text: "Scan to follow live"
             font.family: DisplayState.uiFont
-            font.pixelSize: 8
+            font.pixelSize: 9
             color: "#FFFFFF"
-            opacity: 0.35
-            wrapMode: Text.WrapAnywhere
-            elide: Text.ElideRight
-            maximumLineCount: 2
+            opacity: 0.30
         }
     }
 }

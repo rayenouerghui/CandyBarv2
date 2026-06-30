@@ -18,6 +18,9 @@
       --r-card:  12px;
       --r-chip:  10px;
       --r-outer: 18px;
+      --dur-micro: 150ms;
+      --dur-std:   300ms;
+      --dur-full:  600ms;
     }
     html, body {
       min-height: 100%; background: var(--bg);
@@ -32,9 +35,18 @@
       pointer-events: none; z-index:0;
     }
     /* ── screens ──────────────────────────────────────────────────────── */
-    .screen { position:relative; z-index:1; }
+    .screen {
+      position:relative; z-index:1;
+      opacity:1; transform:translateY(0);
+      transition: opacity var(--dur-std) cubic-bezier(.215,.61,.355,1),
+                  transform var(--dur-std) cubic-bezier(.215,.61,.355,1);
+    }
+    .screen.is-hidden {
+      opacity:0; transform:translateY(12px);
+      pointer-events:none;
+    }
     #screen_pin  { display:flex; }
-    #screen_main { display:none; }
+    #screen_main { display:none; flex-direction:column; }
 
     /* ── PIN screen ──────────────────────────────────────────────────── */
     #screen_pin {
@@ -46,9 +58,10 @@
     .pin-dots  { display:flex; gap:12px; margin-bottom:32px; }
     .pin-dot   {
       width:12px; height:12px; border-radius:50%;
-      background: var(--border); transition: background .2s;
+      background: var(--border);
+      transition: background var(--dur-std) ease, transform var(--dur-micro) ease;
     }
-    .pin-dot.filled { background: var(--accent); }
+    .pin-dot.filled { background: var(--accent); transform:scale(1.08); }
     .pin-error { font-size:12px; color:#f87171; min-height:18px; margin-top:-16px; margin-bottom:16px; }
     .keypad { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; width:min(280px,85vw); }
     .key {
@@ -56,9 +69,9 @@
       border-radius: var(--r-chip); padding:18px;
       font-size:22px; font-weight:500; text-align:center;
       cursor:pointer; user-select:none;
-      transition: transform .1s ease, background .1s ease;
+      transition: transform var(--dur-micro) ease, opacity var(--dur-micro) ease, background var(--dur-micro) ease;
     }
-    .key:active { transform:scale(0.93); background: var(--surface2); }
+    .key:active { transform:scale(0.94); opacity:0.70; background: var(--surface2); }
     .key.wide { grid-column: span 2; font-size:14px; }
     .key.del  { font-size:16px; }
 
@@ -97,17 +110,32 @@
     .preview-content {
       position:absolute; inset:0;
       display:flex; flex-direction:column; align-items:center; justify-content:center;
-      gap:4px;
+      gap:6px;
+      transform:translateY(-3%);
     }
     .preview-label {
-      font-size:8px; letter-spacing:.2em; text-transform:uppercase;
+      font-size:8px; letter-spacing:.18em; text-transform:uppercase;
       color:rgba(255,255,255,.42);
     }
     .preview-number {
       font-family: "DM Mono","Roboto Mono",monospace;
       font-size:40px; font-weight:500; color:#fff; line-height:1;
+      letter-spacing:-0.04em;
+      transition: opacity var(--dur-std) cubic-bezier(.215,.61,.355,1),
+                  transform var(--dur-std) cubic-bezier(.215,.61,.355,1);
     }
-    .preview-underline { height:2px; width:32px; border-radius:1px; }
+    .preview-number.is-out {
+      opacity:0; transform:scale(0.86) translateY(-4px);
+      transition-duration: var(--dur-micro);
+    }
+    .preview-number.is-in {
+      opacity:0; transform:scale(0.90) translateY(8px);
+      transition-duration: var(--dur-micro);
+    }
+    .preview-underline {
+      height:3px; width:min(44%, 72px); min-width:32px; border-radius:2px;
+      transition: background var(--dur-full) ease, opacity var(--dur-std) ease;
+    }
     .preview-facility  { font-size:8px; color:rgba(255,255,255,.28); }
 
     /* number stepper */
@@ -116,9 +144,9 @@
       flex:0 0 56px; height:56px; background:var(--surface);
       font-size:26px; border:none; color:var(--text);
       cursor:pointer; display:flex; align-items:center; justify-content:center;
-      transition: transform .1s ease, background .1s ease;
+      transition: transform var(--dur-micro) ease, opacity var(--dur-micro) ease, background var(--dur-micro) ease;
     }
-    .stepper-btn:active { transform:scale(0.93); background:var(--surface2); }
+    .stepper-btn:active { transform:scale(0.94); opacity:0.70; background:var(--surface2); }
     .stepper-num {
       flex:1; height:56px; background:var(--surface2);
       font-family:"DM Mono","Roboto Mono",monospace;
@@ -132,10 +160,10 @@
       border:2px solid var(--border); border-radius:var(--r-chip);
       padding:8px 4px 6px; cursor:pointer; text-align:center;
       background:var(--surface);
-      transition: border-color .2s, transform .1s;
+      transition: border-color var(--dur-std) ease, transform var(--dur-micro) ease, background var(--dur-std) ease;
     }
-    .layout-thumb:active { transform:scale(0.94); }
-    .layout-thumb.active { border-color:var(--accent); }
+    .layout-thumb:active { transform:scale(0.94); opacity:0.70; }
+    .layout-thumb.active { border-color:var(--accent); background:rgba(255,255,255,0.07); }
     .layout-thumb svg { display:block; margin:0 auto 4px; }
     .layout-thumb span { font-size:11px; color:var(--text2); }
     .layout-thumb.active span { color:var(--text); }
@@ -184,28 +212,30 @@
     /* apply button */
     .apply-bar {
       position:fixed; bottom:0; left:0; right:0; z-index:100;
-      padding:12px 16px; background:rgba(11,13,16,.92);
+      padding:12px 16px; background:rgba(11,13,16,.94);
       border-top:1px solid var(--border);
-      backdrop-filter:blur(8px);
     }
     .apply-btn {
       width:100%; padding:16px; border:none; border-radius:var(--r-chip);
       background:var(--accent); color:#fff;
       font-size:16px; font-weight:600; cursor:pointer;
-      transition: opacity .2s, transform .1s;
+      transition: opacity var(--dur-std) ease, transform var(--dur-micro) ease;
     }
-    .apply-btn:active  { transform:scale(0.97); opacity:.88; }
+    .apply-btn:active  { transform:scale(0.97); opacity:.70; }
     .apply-btn:disabled { opacity:.4; cursor:default; }
 
     /* toast */
     #toast {
       position:fixed; bottom:80px; left:50%; transform:translateX(-50%);
-      background:#1a1f2e; border:1px solid var(--border);
-      color:var(--text); padding:8px 18px; border-radius:20px;
+      background:rgba(0,0,0,0.72); border:1px solid var(--border);
+      color:var(--text); padding:10px 18px; border-radius:14px;
       font-size:13px; opacity:0; pointer-events:none;
-      transition:opacity .25s; white-space:nowrap; z-index:200;
+      transition:opacity var(--dur-std) cubic-bezier(.215,.61,.355,1),
+                 transform var(--dur-std) cubic-bezier(.215,.61,.355,1);
+      white-space:nowrap; z-index:200;
     }
-    #toast.show { opacity:1; }
+    #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+    #toast:not(.show) { transform:translateX(-50%) translateY(8px); }
 
     .conn-dot {
       display:inline-block; width:8px; height:8px; border-radius:50%;
@@ -254,7 +284,7 @@
 </div>
 
 <!-- ══ MAIN EDITOR ═════════════════════════════════════════════════════ -->
-<div id="screen_main" class="screen">
+<div id="screen_main" class="screen is-hidden">
 
   <header class="main-header">
     <h1>Display Editor</h1>
@@ -441,10 +471,7 @@ async function pinSubmit() {
     });
     const d = await r.json();
     if (d.ok) {
-      document.getElementById('screen_pin').style.display = 'none';
-      document.getElementById('screen_main').style.display = 'flex';
-      document.getElementById('screen_main').style.flexDirection = 'column';
-      initEditor();
+      showMainEditor();
     } else {
       document.getElementById('pin_error').textContent = 'Incorrect PIN';
       pinBuffer = '';
@@ -459,6 +486,18 @@ async function pinSubmit() {
 }
 
 /* ── Editor init ────────────────────────────────────────────────────── */
+function showMainEditor() {
+  const pin  = document.getElementById('screen_pin');
+  const main = document.getElementById('screen_main');
+  main.style.display = 'flex';
+  requestAnimationFrame(() => {
+    pin.classList.add('is-hidden');
+    main.classList.remove('is-hidden');
+  });
+  setTimeout(() => { pin.style.display = 'none'; }, 300);
+  initEditor();
+}
+
 async function initEditor() {
   // Load state
   try {
@@ -469,6 +508,7 @@ async function initEditor() {
     document.getElementById('facility_input').value = d.facilityName || '';
     document.getElementById('prev_facility').textContent = d.facilityName || '';
     document.getElementById('prev_number').textContent   = d.currentNumber || '001';
+    updatePreviewNumber(false);
 
     // Layout
     if (d.layoutType) {
@@ -534,7 +574,7 @@ function initMqtt() {
     // Mirror incoming changes to preview (another staff device may have changed)
     if (key === 'currentNumber') {
       document.getElementById('num_input').value = parseInt(val) || 0;
-      document.getElementById('prev_number').textContent = val;
+      updatePreviewNumber(true);
     }
     if (key === 'accentColor') applyAccentLocal(val);
     if (key === 'facilityName') document.getElementById('prev_facility').textContent = val;
@@ -560,11 +600,24 @@ function adjustNum(d) {
   const el = document.getElementById('num_input');
   const v  = Math.max(0, Math.min(999, (parseInt(el.value) || 0) + d));
   el.value = v;
-  updatePreviewNumber();
+  updatePreviewNumber(true);
 }
-function updatePreviewNumber() {
-  const v = String(parseInt(document.getElementById('num_input').value)||0).padStart(3,'0');
-  document.getElementById('prev_number').textContent = v;
+function updatePreviewNumber(animate = true) {
+  const el = document.getElementById('prev_number');
+  const v = String(parseInt(document.getElementById('num_input').value) || 0).padStart(3, '0');
+  if (!animate) {
+    el.textContent = v;
+    el.classList.remove('is-out', 'is-in');
+    return;
+  }
+  el.classList.remove('is-in');
+  el.classList.add('is-out');
+  setTimeout(() => {
+    el.textContent = v;
+    el.classList.remove('is-out');
+    el.classList.add('is-in');
+    requestAnimationFrame(() => el.classList.remove('is-in'));
+  }, 150);
 }
 
 function setLayout(el) {

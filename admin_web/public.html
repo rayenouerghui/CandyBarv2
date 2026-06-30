@@ -12,7 +12,10 @@
       --accent: #0078D4;
       --text:   rgba(255,255,255,0.95);
       --text2:  rgba(255,255,255,0.42);
-      --text3:  rgba(255,255,255,0.32);
+      --text3:  rgba(255,255,255,0.30);
+      --dur-micro: 150ms;
+      --dur-std:   300ms;
+      --dur-full:  600ms;
     }
 
     html, body {
@@ -75,6 +78,7 @@
       padding: 48px 40px 40px;
       max-width: 360px;
       width: 90%;
+      transform: translateY(-3%);
     }
 
     .label {
@@ -83,7 +87,11 @@
       letter-spacing: 0.18em;
       text-transform: uppercase;
       color: var(--text2);
-      margin-bottom: 20px;
+      margin-bottom: 22px;
+    }
+
+    .number-wrap {
+      min-height: 1em;
     }
 
     .number {
@@ -92,21 +100,30 @@
       font-weight: 500;
       line-height: 1;
       color: var(--text);
-      letter-spacing: -0.02em;
-      transition: opacity 0.3s ease, transform 0.3s ease;
+      letter-spacing: -0.04em;
+      display: inline-block;
+      transition: opacity var(--dur-std) cubic-bezier(.215,.61,.355,1),
+                  transform var(--dur-std) cubic-bezier(.215,.61,.355,1);
     }
-    .number.changing {
-      opacity: 0.3;
-      transform: scale(0.92);
+    .number.is-out {
+      opacity: 0;
+      transform: scale(0.86) translateY(-8px);
+      transition-duration: var(--dur-micro);
+    }
+    .number.is-in {
+      opacity: 0;
+      transform: scale(0.90) translateY(12px);
+      transition-duration: var(--dur-micro);
     }
 
     .underline {
-      margin: 14px auto 0;
+      margin: 16px auto 0;
       height: 3px;
-      width: 48px;
+      width: min(44%, 72px);
+      min-width: 48px;
       border-radius: 2px;
       background: var(--accent);
-      transition: background 0.6s ease;
+      transition: background var(--dur-full) ease, opacity var(--dur-std) ease;
     }
 
     /* Next-up strip (Split layout) */
@@ -164,7 +181,9 @@
 
   <div class="card">
     <div class="label">Now Serving</div>
-    <div class="number" id="number">—</div>
+    <div class="number-wrap">
+      <div class="number" id="number">—</div>
+    </div>
     <div class="underline" id="underline"></div>
 
     <div class="next-up" id="next_up_section">
@@ -189,7 +208,7 @@
   }
 
   function applyState(d) {
-    setNumber(d.currentNumber || '—');
+    setNumber(d.currentNumber || '—', false);
     if (d.accentColor) setAccent(d.accentColor);
     if (d.facilityName) document.getElementById('facility').textContent = d.facilityName;
     if (d.layoutType === 'Split' && d.nextUp && d.nextUp.length) {
@@ -199,13 +218,21 @@
     }
   }
 
-  function setNumber(val) {
+  function setNumber(val, animate = true) {
     const el = document.getElementById('number');
-    el.classList.add('changing');
+    if (!animate || el.textContent === val) {
+      el.textContent = val;
+      el.classList.remove('is-out', 'is-in');
+      return;
+    }
+    el.classList.remove('is-in');
+    el.classList.add('is-out');
     setTimeout(() => {
       el.textContent = val;
-      el.classList.remove('changing');
-    }, 160);
+      el.classList.remove('is-out');
+      el.classList.add('is-in');
+      requestAnimationFrame(() => el.classList.remove('is-in'));
+    }, 150);
   }
 
   function setAccent(hex) {

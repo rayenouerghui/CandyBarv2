@@ -5,13 +5,21 @@ import "global"
 // ── WelcomeSplash ─────────────────────────────────────────────────────────
 // Product branding shown once at boot. NOT the business's branding.
 // Crossfades into DisplayView after splashDuration ms.
+//
+// Enter motion inspired by material-components-qml AppRoot.qml playPageEnter()
+// (opacity + vertical settle, OutCubic). Staggered label tiers follow
+// QML-UI-Animations LoginStack opacity ladder pattern.
 
 Item {
     id: root
 
     signal splashComplete
 
-    property int splashDuration: 2200   // ms before crossfade begins
+    readonly property int dur_micro: 150
+    readonly property int dur_std:   300
+    readonly property int dur_full:  600
+
+    property int splashDuration: 2600   // ms before crossfade begins
 
     // Dark background (same as display so crossfade is invisible seam)
     Rectangle {
@@ -19,91 +27,106 @@ Item {
         color: "#0b0d10"
     }
 
-    // Noise texture
     Image {
         anchors.fill: parent
         source: "qrc:/example/res/image/noise_texture.png"
         fillMode: Image.Tile
         opacity: 0.035
         smooth: false
+        cache: true
     }
 
-    // Soft top glow
     Rectangle {
         anchors { top: parent.top; horizontalCenter: parent.horizontalCenter }
-        width: parent.width * 0.7
-        height: parent.height * 0.5
-        radius: height / 2
-        color: "transparent"
-        layer.enabled: true
-        // Approximating radial gradient with a rectangle + blur would require
-        // QtGraphicalEffects; instead use a simple semi-transparent white rect
-        // at very low opacity — cheap and works on ARM.
-        Rectangle {
-            anchors.centerIn: parent
-            width: parent.width; height: parent.height
-            radius: height / 2
-            color: Qt.rgba(1, 1, 1, 0.03)
-        }
+        width: parent.width * 0.65
+        height: parent.height * 0.45
+        radius: height * 0.5
+        color: Qt.rgba(1, 1, 1, 0.025)
     }
 
-    ColumnLayout {
+    Rectangle {
+        anchors { bottom: parent.bottom; right: parent.right }
+        width: parent.width * 0.45
+        height: parent.height * 0.45
+        radius: height * 0.5
+        color: DisplayState.accentAlpha(0.08)
+    }
+
+    // Brand cluster — lifts into place as one unit, then sub-elements stagger
+    Item {
+        id: brand_cluster
         anchors.centerIn: parent
-        spacing: 16
+        anchors.verticalCenterOffset: -Math.max(parent.height * 0.03, 12)
+        width: brand_column.implicitWidth
+        height: brand_column.implicitHeight
+        opacity: 0
+        transform: Translate { id: brand_lift; y: 16 }
 
-        // Product wordmark
-        Text {
-            id: splash_title
-            Layout.alignment: Qt.AlignHCenter
-            text: "CandyBar"
-            font.family: DisplayState.uiFont
-            font.pixelSize: Math.max(root.height * 0.06, 32)
-            font.weight: Font.Light
-            font.letterSpacing: 8
-            color: "#FFFFFF"
-            opacity: 0
-            SequentialAnimation on opacity {
-                running: true
-                PauseAnimation { duration: 200 }
-                NumberAnimation { from: 0; to: 1; duration: 600; easing.type: Easing.OutCubic }
+        Column {
+            id: brand_column
+            anchors.centerIn: parent
+            spacing: 10
+
+            Text {
+                id: splash_title
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "CandyBar"
+                font.family: DisplayState.uiFont
+                font.pixelSize: Math.max(root.height * 0.058, 34)
+                font.weight: Font.Light
+                font.letterSpacing: 6
+                color: "#FFFFFF"
+                opacity: 0
             }
-        }
 
-        // Tagline
-        Text {
-            id: splash_sub
-            Layout.alignment: Qt.AlignHCenter
-            text: "Queue Display System"
-            font.family: DisplayState.uiFont
-            font.pixelSize: Math.max(root.height * 0.022, 14)
-            font.weight: Font.Light
-            color: "#FFFFFF"
-            opacity: 0
-            SequentialAnimation on opacity {
-                running: true
-                PauseAnimation { duration: 400 }
-                NumberAnimation { from: 0; to: 0.40; duration: 600; easing.type: Easing.OutCubic }
+            Text {
+                id: splash_sub
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "Queue Display System"
+                font.family: DisplayState.uiFont
+                font.pixelSize: Math.max(root.height * 0.022, 13)
+                font.weight: Font.Light
+                font.letterSpacing: 1
+                color: "#FFFFFF"
+                opacity: 0
             }
-        }
 
-        // Accent underline — touches accent color once, as brand cue
-        Rectangle {
-            id: splash_line
-            Layout.alignment: Qt.AlignHCenter
-            width: 0
-            height: 2
-            radius: 1
-            color: DisplayState.accentColor
-            Behavior on color { ColorAnimation { duration: 400 } }
-            SequentialAnimation on width {
-                running: true
-                PauseAnimation { duration: 600 }
-                NumberAnimation { from: 0; to: 48; duration: 500; easing.type: Easing.OutCubic }
+            Rectangle {
+                id: splash_line
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: 0
+                height: 2
+                radius: 1
+                color: DisplayState.accentColor
             }
         }
     }
 
-    // Auto-advance timer
+    ParallelAnimation {
+        id: brand_enter
+        running: true
+        NumberAnimation { target: brand_cluster; property: "opacity"; from: 0; to: 1; duration: root.dur_full; easing.type: Easing.OutCubic }
+        NumberAnimation { target: brand_lift; property: "y"; from: 16; to: 0; duration: root.dur_full; easing.type: Easing.OutCubic }
+    }
+
+    SequentialAnimation {
+        running: true
+        PauseAnimation { duration: root.dur_micro }
+        NumberAnimation { target: splash_title; property: "opacity"; from: 0; to: 1; duration: root.dur_full; easing.type: Easing.OutCubic }
+    }
+
+    SequentialAnimation {
+        running: true
+        PauseAnimation { duration: root.dur_std }
+        NumberAnimation { target: splash_sub; property: "opacity"; from: 0; to: 0.42; duration: root.dur_full; easing.type: Easing.OutCubic }
+    }
+
+    SequentialAnimation {
+        running: true
+        PauseAnimation { duration: root.dur_std + root.dur_micro }
+        NumberAnimation { target: splash_line; property: "width"; from: 0; to: 52; duration: root.dur_std; easing.type: Easing.OutCubic }
+    }
+
     Timer {
         interval: root.splashDuration
         running: true

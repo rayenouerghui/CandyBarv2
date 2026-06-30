@@ -4,17 +4,17 @@ import FluentUI 1.0
 import "global"
 
 // ── DisplayView ──────────────────────────────────────────────────────────
-// The permanent, always-on display. Hosts Classic and Split layouts.
-// Both are kept in the component tree but toggled via opacity/visible so
-// layout switching can be animated (crossfade) without reload.
+// The permanent, always-on display. Hosts Classic, Split, and Centered layouts.
+// All three stay in the tree; opacity crossfade switches between them.
 //
 // Visual design spec:
 //   Background: #0b0d10 solid + noise texture (static PNG, ARM-safe) +
 //               soft white radial top glow + accent-tinted corner glow
-//   Typography: DM Mono for the number (tabular figures), system font elsewhere
+//   Typography: DM Mono Medium for the number (tabular figures), system font elsewhere
 //   Accent:     touches only logo bg + number underline (2 elements max)
-//   Motion:     number change = outgoing scale↓+fade, incoming scale↑+fade
-//                               250-350ms OutCubic, no bounce/overshoot
+//   Motion:     number change = lift+shrink+fade out (150ms InCubic),
+//               then rise+grow+fade in (300ms OutQuart) — one transform stack,
+//               no stacked unrelated animations
 
 Item {
     id: root
@@ -31,6 +31,75 @@ Item {
 
     // Font scale: number pixel-size relative to display height
     readonly property real numScale: Math.max(root.height / 480.0, 0.8)
+
+    // Per-layout number scale — shared treatment, layout-appropriate size
+    readonly property real numLayoutClassic:  1.00
+    readonly property real numLayoutSplit:    1.08
+    readonly property real numLayoutCentered: 1.22
+
+    // Tight tracking binds multi-digit blocks into one readable unit at distance
+    readonly property int numLetterSpacing: -3
+
+    // Optical centering — focal content sits slightly above geometric center
+    readonly property real numOpticalLift: -Math.max(root.height * 0.03, 12)
+
+    // ── Shared serving-number building blocks (all three layouts) ────────
+    component ServingLabel: Text {
+        Layout.alignment: Qt.AlignHCenter
+        text: "NOW SERVING"
+        font.family: DisplayState.uiFont
+        font.pixelSize: Math.max(root.height * 0.027, 11)
+        font.letterSpacing: 6
+        font.weight: Font.Light
+        color: "#FFFFFF"
+        opacity: 0.42
+    }
+
+    component ServingNumber: Item {
+        property real layoutMult: 1.0
+
+        Layout.alignment: Qt.AlignHCenter
+        Layout.preferredWidth:  numText.implicitWidth
+        Layout.preferredHeight: numText.implicitHeight
+        opacity: root._numOpacity
+        scale: root._numScale
+        transformOrigin: Item.Center
+        transform: Translate { y: root._numTranslateY }
+
+        Text {
+            id: numText
+            anchors.centerIn: parent
+            text: root._shownNumber
+            font.family: DisplayState.numberFont
+            font.pixelSize: DisplayState.fontSize * root.numScale * layoutMult
+            font.weight: Font.Medium
+            font.letterSpacing: root.numLetterSpacing
+            renderType: Text.NativeRendering
+            color: "#FFFFFF"
+        }
+    }
+
+    component ServingUnderline: Item {
+        property real layoutMult: 1.0
+
+        Layout.alignment: Qt.AlignHCenter
+        Layout.preferredWidth:  bar.width
+        Layout.preferredHeight: bar.height
+        opacity: root._numOpacity
+        scale: root._numScale
+        transformOrigin: Item.Center
+        transform: Translate { y: root._numTranslateY * 0.35 }
+
+        Rectangle {
+            id: bar
+            anchors.centerIn: parent
+            width: Math.max(48, DisplayState.fontSize * root.numScale * layoutMult * 0.44)
+            height: 3
+            radius: 2
+            color: DisplayState.accentColor
+            Behavior on color { ColorAnimation { duration: root.dur_full } }
+        }
+    }
 
     // ── Background layers (shared by both layouts) ───────────────────────
     Rectangle {
@@ -75,35 +144,65 @@ Item {
     }
 
     // ── Number change animation controller ───────────────────────────────
-    // Outgoing: scale to 0.88 + fade to 0 (150ms InCubic)
-    // Incoming: scale from 0.92 to 1.0 + fade in (300ms OutCubic)
-    // Driven by DisplayState.currentNumber change
+    // Outgoing: lift slightly + shrink + fade (150ms InCubic — calm exit)
+    // Incoming: rise from below + grow + fade in (300ms OutQuart — decisive arrival)
+    // Transform stack: opacity + scale + translateY only (GPU-cheap)
     property string _shownNumber: DisplayState.currentNumber
     property real   _numOpacity:  1.0
     property real   _numScale:    1.0
+    property real   _numTranslateY: 0
 
-    onVisibleChanged: { if (visible) _shownNumber = DisplayState.currentNumber }
+    readonly property real _numOutScale:    0.86
+    readonly property real _numInFromScale: 0.90
+    readonly property real _numOutLift:     Math.max(root.height * 0.022, 8)
+    readonly property real _numInDrop:      Math.max(root.height * 0.028, 10)
+
+    function _resetNumberAnimState() {
+        _numOpacity    = 1.0
+        _numScale      = 1.0
+        _numTranslateY = 0
+    }
+
+    onVisibleChanged: {
+        if (visible) {
+            _shownNumber = DisplayState.currentNumber
+            _resetNumberAnimState()
+        }
+    }
 
     Connections {
         target: DisplayState
         function onCurrentNumberChanged() {
-            num_out_anim.start()
+            if (_shownNumber === DisplayState.currentNumber)
+                return
+            num_change_anim.stop()
+            num_change_anim.start()
         }
     }
 
     SequentialAnimation {
-        id: num_out_anim
-        // Phase 1: outgoing number fades/shrinks
+        id: num_change_anim
+        alwaysRunToEnd: false
+
+        // Phase 1: outgoing number recedes upward
         ParallelAnimation {
-            NumberAnimation { target: root; property: "_numOpacity"; to: 0;    duration: 150; easing.type: Easing.InCubic }
-            NumberAnimation { target: root; property: "_numScale";   to: 0.88; duration: 150; easing.type: Easing.InCubic }
+            NumberAnimation { target: root; property: "_numOpacity";    to: 0;                 duration: root.dur_micro; easing.type: Easing.InCubic }
+            NumberAnimation { target: root; property: "_numScale";      to: root._numOutScale;  duration: root.dur_micro; easing.type: Easing.InCubic }
+            NumberAnimation { target: root; property: "_numTranslateY"; to: -root._numOutLift;  duration: root.dur_micro; easing.type: Easing.InCubic }
         }
-        // Swap the displayed number
-        ScriptAction { script: { root._shownNumber = DisplayState.currentNumber } }
-        // Phase 2: incoming number scales up / fades in
+        ScriptAction {
+            script: {
+                root._shownNumber   = DisplayState.currentNumber
+                root._numTranslateY = root._numInDrop
+                root._numScale      = root._numInFromScale
+                root._numOpacity    = 0
+            }
+        }
+        // Phase 2: incoming number settles into place
         ParallelAnimation {
-            NumberAnimation { target: root; property: "_numOpacity"; to: 1;   duration: 300; easing.type: Easing.OutCubic }
-            NumberAnimation { target: root; property: "_numScale";   to: 1.0; duration: 300; easing.type: Easing.OutCubic }
+            NumberAnimation { target: root; property: "_numOpacity";    to: 1;   duration: root.dur_std; easing.type: Easing.OutQuart }
+            NumberAnimation { target: root; property: "_numScale";      to: 1.0; duration: root.dur_std; easing.type: Easing.OutQuart }
+            NumberAnimation { target: root; property: "_numTranslateY"; to: 0;   duration: root.dur_std; easing.type: Easing.OutQuart }
         }
     }
 
@@ -184,39 +283,21 @@ Item {
 
                 ColumnLayout {
                     anchors.centerIn: parent
-                    spacing: 8
+                    anchors.verticalCenterOffset: root.numOpticalLift
+                    spacing: 0
 
-                    Text {
-                        Layout.alignment: Qt.AlignHCenter
-                        text: "NOW SERVING"
-                        font.family: DisplayState.uiFont
-                        font.pixelSize: Math.max(root.height * 0.028, 11)
-                        font.letterSpacing: 7
-                        font.weight: Font.Light
-                        color: "#FFFFFF"
-                        opacity: 0.42
+                    ServingLabel {
+                        Layout.bottomMargin: Math.max(root.height * 0.018, 10)
                     }
 
-                    // The number — DM Mono, animated via root._shownNumber
-                    Text {
-                        id: number_classic
-                        Layout.alignment: Qt.AlignHCenter
-                        text: root._shownNumber
-                        font.family: DisplayState.numberFont
-                        font.pixelSize: DisplayState.fontSize * root.numScale
-                        font.weight: Font.Medium
-                        color: "#FFFFFF"
-                        opacity: root._numOpacity
-                        scale:  root._numScale
-                        // No Behavior here — driven by the SequentialAnimation above
+                    ServingNumber {
+                        layoutMult: root.numLayoutClassic
+                        Layout.bottomMargin: Math.max(root.height * 0.014, 8)
                     }
 
-                    // Accent underline — 2nd of 2 accent touches
-                    Rectangle {
-                        Layout.alignment: Qt.AlignHCenter
-                        width: 44; height: 3; radius: 2
-                        color: DisplayState.accentColor
-                        Behavior on color { ColorAnimation { duration: root.dur_full } }
+                    ServingUnderline {
+                        layoutMult: root.numLayoutClassic
+                        Layout.bottomMargin: Math.max(root.height * 0.018, 10)
                     }
 
                     Text {
@@ -290,11 +371,13 @@ Item {
 
                 ColumnLayout {
                     anchors.centerIn: parent
-                    spacing: 12
+                    anchors.verticalCenterOffset: root.numOpticalLift
+                    spacing: 0
 
                     // Logo — accent bg
                     Rectangle {
                         Layout.alignment: Qt.AlignHCenter
+                        Layout.bottomMargin: Math.max(root.height * 0.022, 12)
                         width: 56; height: 56; radius: root.radius_chip
                         color: DisplayState.accentAlpha(0.18)
                         Behavior on color { ColorAnimation { duration: root.dur_full } }
@@ -307,34 +390,17 @@ Item {
                         }
                     }
 
-                    Text {
-                        Layout.alignment: Qt.AlignHCenter
-                        text: "NOW SERVING"
-                        font.family: DisplayState.uiFont
-                        font.pixelSize: Math.max(root.height * 0.026, 11)
-                        font.letterSpacing: 6
-                        font.weight: Font.Light
-                        color: "#FFFFFF"
-                        opacity: 0.42
+                    ServingLabel {
+                        Layout.bottomMargin: Math.max(root.height * 0.016, 8)
                     }
 
-                    Text {
-                        id: number_split
-                        Layout.alignment: Qt.AlignHCenter
-                        text: root._shownNumber
-                        font.family: DisplayState.numberFont
-                        font.pixelSize: DisplayState.fontSize * root.numScale * 1.05
-                        font.weight: Font.Medium
-                        color: "#FFFFFF"
-                        opacity: root._numOpacity
-                        scale:  root._numScale
+                    ServingNumber {
+                        layoutMult: root.numLayoutSplit
+                        Layout.bottomMargin: Math.max(root.height * 0.012, 6)
                     }
 
-                    Rectangle {
-                        Layout.alignment: Qt.AlignHCenter
-                        width: 36; height: 3; radius: 2
-                        color: DisplayState.accentColor
-                        Behavior on color { ColorAnimation { duration: root.dur_full } }
+                    ServingUnderline {
+                        layoutMult: root.numLayoutSplit
                     }
                 }
             }
@@ -442,6 +508,7 @@ Item {
 
         ColumnLayout {
             anchors.centerIn: parent
+            anchors.verticalCenterOffset: root.numOpticalLift
             spacing: 0
 
             // Logo — accent-tinted badge, larger than other layouts
@@ -460,45 +527,23 @@ Item {
                 }
             }
 
-            // "NOW SERVING" label
-            Text {
-                Layout.alignment: Qt.AlignHCenter
-                Layout.bottomMargin: Math.max(root.height * 0.015, 8)
-                text: "NOW SERVING"
-                font.family: DisplayState.uiFont
-                font.pixelSize: Math.max(root.height * 0.028, 11)
-                font.letterSpacing: 7
-                font.weight: Font.Light
-                color: "#FFFFFF"
-                opacity: 0.42
+            ServingLabel {
+                Layout.bottomMargin: Math.max(root.height * 0.018, 10)
             }
 
-            // The number — bigger scale than Classic since there's no header stealing height
-            Text {
-                id: number_centered
-                Layout.alignment: Qt.AlignHCenter
-                text: root._shownNumber
-                font.family: DisplayState.numberFont
-                font.pixelSize: DisplayState.fontSize * root.numScale * 1.20
-                font.weight: Font.Medium
-                color: "#FFFFFF"
-                opacity: root._numOpacity
-                scale:  root._numScale
+            ServingNumber {
+                layoutMult: root.numLayoutCentered
+                Layout.bottomMargin: Math.max(root.height * 0.016, 8)
             }
 
-            // Accent underline
-            Rectangle {
-                Layout.alignment: Qt.AlignHCenter
-                Layout.topMargin: Math.max(root.height * 0.02, 10)
-                width: 52; height: 3; radius: 2
-                color: DisplayState.accentColor
-                Behavior on color { ColorAnimation { duration: root.dur_full } }
+            ServingUnderline {
+                layoutMult: root.numLayoutCentered
+                Layout.bottomMargin: Math.max(root.height * 0.022, 12)
             }
 
             // Facility name
             Text {
                 Layout.alignment: Qt.AlignHCenter
-                Layout.topMargin: Math.max(root.height * 0.025, 12)
                 text: DisplayState.facilityName
                 font.family: DisplayState.uiFont
                 font.pixelSize: Math.max(root.height * 0.026, 12)

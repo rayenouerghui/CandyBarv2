@@ -38,4 +38,23 @@ Window {
     MainDisplay {
         anchors.fill: parent
     }
+
+    // ── Keyboard shortcuts (kiosk management) ────────────────────────────
+    // Escape or Super+M → exit fullscreen to windowed (for maintenance)
+    // Super+Q          → close the app
+    Item {
+        focus: true
+        Keys.onPressed: function(event) {
+            if (event.key === Qt.Key_Escape) {
+                root.showNormal()
+                event.accepted = true
+            } else if (event.key === Qt.Key_M && (event.modifiers & Qt.MetaModifier)) {
+                root.showMinimized()
+                event.accepted = true
+            } else if (event.key === Qt.Key_Q && (event.modifiers & Qt.MetaModifier)) {
+                Qt.quit()
+                event.accepted = true
+            }
+        }
+    }
 }

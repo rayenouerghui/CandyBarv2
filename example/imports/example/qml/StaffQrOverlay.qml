@@ -16,8 +16,8 @@ Item {
 
     // Public recall function — called by MainDisplay on tap or GPIO
     function recall() {
-        scale_anim.stop()
-        root.scale    = 0.88
+        scale_out.stop()
+        root.scale    = 0.78   // C: wider origin range → overlay materialises from background
         root.opacity  = 0
         scale_in.start()
         hide_timer.restart()
@@ -29,17 +29,20 @@ Item {
         hide_timer.stop()
     }
 
-    // Appear: scale 0.88→1.0, opacity 0→1, OutCubic 300ms
+    // Appear: scale 0.78→1.0, opacity 0→1, OutQuart 300ms
+    // A: OutQuart (steeper deceleration) → decisive tap response
+    // C: from 0.78 (was 0.88) → wider range, overlay feels like it materialises
     ParallelAnimation {
         id: scale_in
-        NumberAnimation { target: root; property: "scale";   from: 0.88; to: 1.0; duration: 300; easing.type: Easing.OutCubic }
-        NumberAnimation { target: root; property: "opacity"; from: 0;    to: 1;   duration: 300; easing.type: Easing.OutCubic }
+        NumberAnimation { target: root; property: "scale";   from: 0.78; to: 1.0; duration: 300; easing.type: Easing.OutQuart }
+        NumberAnimation { target: root; property: "opacity"; from: 0;    to: 1;   duration: 300; easing.type: Easing.OutQuart }
     }
 
-    // Dismiss: scale 1.0→0.88, opacity 1→0, InCubic 200ms
+    // Dismiss: scale 1.0→0.78, opacity 1→0, InCubic 200ms
+    // Dismiss stays InCubic — leaving is calm, not urgent
     ParallelAnimation {
         id: scale_out
-        NumberAnimation { target: root; property: "scale";   from: 1.0; to: 0.88; duration: 200; easing.type: Easing.InCubic }
+        NumberAnimation { target: root; property: "scale";   from: 1.0; to: 0.78; duration: 200; easing.type: Easing.InCubic }
         NumberAnimation { target: root; property: "opacity"; from: 1;   to: 0;    duration: 200; easing.type: Easing.InCubic }
     }
 

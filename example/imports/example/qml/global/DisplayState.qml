@@ -48,6 +48,13 @@ QtObject {
     // ── internal: whether persistence has been loaded ───────────────────
     property bool _loaded: false
 
+    // ── accent color helper ─────────────────────────────────────────────
+    // Use accentAlpha(a) instead of Qt.rgba(accentColor.r, ..., a) inline.
+    // Keeps all accent tinting consistent and readable.
+    function accentAlpha(a) {
+        return Qt.rgba(accentColor.r, accentColor.g, accentColor.b, a)
+    }
+
     // ── load saved state from disk ─────────────────────────────────────
     function loadFromDisk() {
         if (_loaded) return

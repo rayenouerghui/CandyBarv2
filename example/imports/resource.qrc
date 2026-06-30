@@ -19,8 +19,8 @@
         <file>example/res/image/noise_texture.png</file>
 
         <!-- Fonts: DM Mono for tabular number display -->
-        <file>example/res/font/DMMono-Regular.ttf</file>
-        <file>example/res/font/DMMono-Medium.ttf</file>
+        <file>example/res/font/DMMono-Regular.otf</file>
+        <file>example/res/font/DMMono-Medium.otf</file>
 
         <!-- i18n (kept for potential future use) -->
         <file>example/i18n/example_en_US.qm</file>

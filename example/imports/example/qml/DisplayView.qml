@@ -70,11 +70,7 @@ Item {
         width:  parent.width  * 0.45
         height: parent.height * 0.45
         radius: height * 0.5
-        color:  Qt.rgba(
-                    DisplayState.accentColor.r,
-                    DisplayState.accentColor.g,
-                    DisplayState.accentColor.b,
-                    0.08)
+        color:  DisplayState.accentAlpha(0.08)
         Behavior on color { ColorAnimation { duration: dur_full } }
     }
 
@@ -112,12 +108,14 @@ Item {
     }
 
     // ── Layout switcher ──────────────────────────────────────────────────
-    // Both layouts always exist; crossfade between them on layoutType change.
-    property real _classicOpacity: DisplayState.layoutType === "Classic" ? 1 : 0
-    property real _splitOpacity:   DisplayState.layoutType === "Split"   ? 1 : 0
+    // All three layouts always exist; crossfade between them on layoutType change.
+    property real _classicOpacity:  DisplayState.layoutType === "Classic"  ? 1 : 0
+    property real _splitOpacity:    DisplayState.layoutType === "Split"    ? 1 : 0
+    property real _centeredOpacity: DisplayState.layoutType === "Centered" ? 1 : 0
 
-    Behavior on _classicOpacity { NumberAnimation { duration: dur_full; easing.type: Easing.OutCubic } }
-    Behavior on _splitOpacity   { NumberAnimation { duration: dur_full; easing.type: Easing.OutCubic } }
+    Behavior on _classicOpacity  { NumberAnimation { duration: dur_full; easing.type: Easing.OutCubic } }
+    Behavior on _splitOpacity    { NumberAnimation { duration: dur_full; easing.type: Easing.OutCubic } }
+    Behavior on _centeredOpacity { NumberAnimation { duration: dur_full; easing.type: Easing.OutCubic } }
 
     // ── CLASSIC LAYOUT ───────────────────────────────────────────────────
     Item {
@@ -143,11 +141,7 @@ Item {
                     // Logo container — accent color here (1 of 2 accent touches)
                     Rectangle {
                         width: 44; height: 44; radius: root.radius_chip
-                        color: Qt.rgba(
-                                   DisplayState.accentColor.r,
-                                   DisplayState.accentColor.g,
-                                   DisplayState.accentColor.b,
-                                   0.20)
+                        color: DisplayState.accentAlpha(0.20)
                         Behavior on color { ColorAnimation { duration: root.dur_full } }
                         Image {
                             anchors { fill: parent; margins: 4 }
@@ -302,11 +296,7 @@ Item {
                     Rectangle {
                         Layout.alignment: Qt.AlignHCenter
                         width: 56; height: 56; radius: root.radius_chip
-                        color: Qt.rgba(
-                                   DisplayState.accentColor.r,
-                                   DisplayState.accentColor.g,
-                                   DisplayState.accentColor.b,
-                                   0.18)
+                        color: DisplayState.accentAlpha(0.18)
                         Behavior on color { ColorAnimation { duration: root.dur_full } }
                         Image {
                             anchors { fill: parent; margins: 4 }
@@ -436,6 +426,86 @@ Item {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    // ── CENTERED LAYOUT ───────────────────────────────────────────────────
+    // Minimal, symmetrical. Logo top-center, number center-screen (large),
+    // facility name below, accent underline. No header bar, no footer ticker.
+    // Designed for very large rooms where the number alone needs to fill the frame.
+    Item {
+        id: centered_layout
+        anchors.fill: parent
+        opacity: root._centeredOpacity
+        visible: opacity > 0
+
+        ColumnLayout {
+            anchors.centerIn: parent
+            spacing: 0
+
+            // Logo — accent-tinted badge, larger than other layouts
+            Rectangle {
+                Layout.alignment: Qt.AlignHCenter
+                Layout.bottomMargin: Math.max(root.height * 0.04, 16)
+                width: 72; height: 72; radius: root.radius_card
+                color: DisplayState.accentAlpha(0.18)
+                Behavior on color { ColorAnimation { duration: root.dur_full } }
+                Image {
+                    anchors { fill: parent; margins: 6 }
+                    source: DisplayState.logoSource
+                    fillMode: Image.PreserveAspectFit
+                    asynchronous: true
+                    sourceSize: Qt.size(144, 144)
+                }
+            }
+
+            // "NOW SERVING" label
+            Text {
+                Layout.alignment: Qt.AlignHCenter
+                Layout.bottomMargin: Math.max(root.height * 0.015, 8)
+                text: "NOW SERVING"
+                font.family: DisplayState.uiFont
+                font.pixelSize: Math.max(root.height * 0.028, 11)
+                font.letterSpacing: 7
+                font.weight: Font.Light
+                color: "#FFFFFF"
+                opacity: 0.42
+            }
+
+            // The number — bigger scale than Classic since there's no header stealing height
+            Text {
+                id: number_centered
+                Layout.alignment: Qt.AlignHCenter
+                text: root._shownNumber
+                font.family: DisplayState.numberFont
+                font.pixelSize: DisplayState.fontSize * root.numScale * 1.20
+                font.weight: Font.Medium
+                color: "#FFFFFF"
+                opacity: root._numOpacity
+                scale:  root._numScale
+            }
+
+            // Accent underline
+            Rectangle {
+                Layout.alignment: Qt.AlignHCenter
+                Layout.topMargin: Math.max(root.height * 0.02, 10)
+                width: 52; height: 3; radius: 2
+                color: DisplayState.accentColor
+                Behavior on color { ColorAnimation { duration: root.dur_full } }
+            }
+
+            // Facility name
+            Text {
+                Layout.alignment: Qt.AlignHCenter
+                Layout.topMargin: Math.max(root.height * 0.025, 12)
+                text: DisplayState.facilityName
+                font.family: DisplayState.uiFont
+                font.pixelSize: Math.max(root.height * 0.026, 12)
+                font.weight: Font.Light
+                color: "#FFFFFF"
+                opacity: 0.42
+                elide: Text.ElideRight
             }
         }
     }

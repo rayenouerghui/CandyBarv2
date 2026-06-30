@@ -53,6 +53,7 @@ Item {
 
         // Product wordmark
         Text {
+            id: splash_title
             Layout.alignment: Qt.AlignHCenter
             text: "CandyBar"
             font.family: DisplayState.uiFont
@@ -61,17 +62,16 @@ Item {
             font.letterSpacing: 8
             color: "#FFFFFF"
             opacity: 0
-            NumberAnimation on opacity {
+            SequentialAnimation on opacity {
                 running: true
-                from: 0; to: 1
-                duration: 600
-                easing.type: Easing.OutCubic
-                delay: 200
+                PauseAnimation { duration: 200 }
+                NumberAnimation { from: 0; to: 1; duration: 600; easing.type: Easing.OutCubic }
             }
         }
 
         // Tagline
         Text {
+            id: splash_sub
             Layout.alignment: Qt.AlignHCenter
             text: "Queue Display System"
             font.family: DisplayState.uiFont
@@ -79,29 +79,26 @@ Item {
             font.weight: Font.Light
             color: "#FFFFFF"
             opacity: 0
-            NumberAnimation on opacity {
+            SequentialAnimation on opacity {
                 running: true
-                from: 0; to: 0.40
-                duration: 600
-                easing.type: Easing.OutCubic
-                delay: 400
+                PauseAnimation { duration: 400 }
+                NumberAnimation { from: 0; to: 0.40; duration: 600; easing.type: Easing.OutCubic }
             }
         }
 
         // Accent underline — touches accent color once, as brand cue
         Rectangle {
+            id: splash_line
             Layout.alignment: Qt.AlignHCenter
             width: 0
             height: 2
             radius: 1
             color: DisplayState.accentColor
             Behavior on color { ColorAnimation { duration: 400 } }
-            NumberAnimation on width {
+            SequentialAnimation on width {
                 running: true
-                from: 0; to: 48
-                duration: 500
-                easing.type: Easing.OutCubic
-                delay: 600
+                PauseAnimation { duration: 600 }
+                NumberAnimation { from: 0; to: 48; duration: 500; easing.type: Easing.OutCubic }
             }
         }
     }

@@ -4,6 +4,18 @@ MQTTClient — bridges paho-mqtt callbacks into PySide6 Qt signals.
 Runs paho's network loop in a background daemon thread.
 Qt's queued connection mechanism marshals all signals safely to the main thread.
 
+Broker address is read from environment variables so it can be changed
+via a systemd unit file without touching code:
+
+  CANDYBAR_MQTT_HOST  — hostname or IP of the EMQX broker (default: localhost)
+  CANDYBAR_MQTT_PORT  — TCP port                           (default: 1883)
+  CANDYBAR_MQTT_USER  — username, if EMQX auth is enabled  (default: empty)
+  CANDYBAR_MQTT_PASS  — password, if EMQX auth is enabled  (default: empty)
+
+For the default on-device deployment EMQX runs on the same machine, so the
+defaults work without setting anything. Set the env vars in the systemd unit
+if the broker is moved to a separate device or auth is later enabled.
+
 Signals:
   displayCommandReceived(key, value)  — routed to DisplayState.applyMqttCommand()
   connectedChanged()                  — bool flip
@@ -11,10 +23,16 @@ Signals:
   messageReceived(topic, payload)     — raw, used by stats tracking
 """
 
+import os
 import threading
 
 import paho.mqtt.client as mqtt
 from PySide6.QtCore import QObject, Signal, Slot, Property
+
+_BROKER = os.environ.get("CANDYBAR_MQTT_HOST", "localhost")
+_PORT   = int(os.environ.get("CANDYBAR_MQTT_PORT", "1883"))
+_USER   = os.environ.get("CANDYBAR_MQTT_USER", "")
+_PASS   = os.environ.get("CANDYBAR_MQTT_PASS", "")
 
 
 class MQTTClient(QObject):
@@ -25,12 +43,14 @@ class MQTTClient(QObject):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self._broker = "localhost"
-        self._port = 1883
+        self._broker = _BROKER
+        self._port = _PORT
         self._connected = False
         self._status = "Connecting…"
 
         self._client = mqtt.Client(client_id="candybar-display")
+        if _USER:
+            self._client.username_pw_set(_USER, _PASS)
         self._client.on_connect = self._on_connect
         self._client.on_disconnect = self._on_disconnect
         self._client.on_message = self._on_message

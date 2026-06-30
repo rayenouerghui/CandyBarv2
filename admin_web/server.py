@@ -242,7 +242,7 @@ def run(mqtt_client, display_persistence, usage_stats):
             self.end_headers()
             self.wfile.write(body)
 
-        def _read_json(self) -> dict | None:
+        def _read_json(self):  # -> Optional[dict]  (py3.8 compat)
             try:
                 length = int(self.headers.get("Content-Length", 0))
                 raw = self.rfile.read(length)

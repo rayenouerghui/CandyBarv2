@@ -38,6 +38,12 @@ class UsageStats(QObject):
         self._s.sync()
         logger.debug(f"Number change recorded: {count + 1}")
 
+    @Slot()
+    def reset_stats(self) -> None:
+        self._s.setValue("numberChangeCount", 0)
+        self._s.sync()
+        logger.info("Usage stats reset")
+
     def as_dict(self) -> dict:
         uptime_seconds = int(time.time() - self._start_time)
         h = uptime_seconds // 3600

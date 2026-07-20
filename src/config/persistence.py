@@ -121,3 +121,14 @@ class DisplayPersistence(QObject):
     def get_display_language(self) -> str:
         v = str(self.load("displayLanguage", "en"))
         return v if v in ("en", "fr", "ar") else "en"
+
+    def reset_all(self) -> None:
+        """Reset all display settings to defaults."""
+        logger.info("Resetting all display settings")
+        try:
+            s = QSettings(self._ini_path, QSettings.Format.IniFormat)
+            s.clear()
+            s.sync()
+            logger.info("All display settings cleared")
+        except Exception as e:
+            logger.error(f"Failed to reset display settings: {e}", exc_info=True)

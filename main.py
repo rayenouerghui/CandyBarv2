@@ -80,13 +80,13 @@ def _copy_static_assets_to_data_dir(data_dir: str) -> None:
 
 
 
-def _start_web_server(mqtt_client, display_persistence, usage_stats, font_manager):
+def _start_web_server(mqtt_client, display_persistence, usage_stats, font_manager, audio_engine):
     logger = get_logger()
     try:
         import web.server as srv
         t = threading.Thread(
             target=srv.run,
-            args=(mqtt_client, display_persistence, usage_stats, font_manager),
+            args=(mqtt_client, display_persistence, usage_stats, font_manager, audio_engine, sys.argv),
             daemon=True,
         )
         t.start()
@@ -153,7 +153,7 @@ def main():
     ctx.setContextProperty("FontManager", font_manager)
 
     mqtt_client.connect_broker()
-    _start_web_server(mqtt_client, persistence, usage_stats, font_manager)
+    _start_web_server(mqtt_client, persistence, usage_stats, font_manager, audio_engine)
 
     engine.load(QUrl("qrc:/app/qml/App.qml"))
     if not engine.rootObjects():

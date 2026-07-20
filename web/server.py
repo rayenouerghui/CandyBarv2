@@ -99,7 +99,7 @@ def _parse_multipart(content_type: str, content_length: int, rfile):
     return result
 
 
-def create_handler(upload_dir, mqtt_client, display_persistence, usage_stats, font_manager):
+def create_handler(upload_dir, mqtt_client, display_persistence, usage_stats, font_manager, audio_engine, original_argv):
     """Factory function to create a Handler class with access to dependencies."""
     class Handler(http.server.BaseHTTPRequestHandler):
         def log_message(self, fmt, *args):
@@ -146,8 +146,18 @@ def create_handler(upload_dir, mqtt_client, display_persistence, usage_stats, fo
                 self._json_response(usage_stats.as_dict())
             elif path == "/api/fonts":
                 self._handle_get_fonts()
+            elif path == "/api/health":
+                self._json_response({"ok": True})
             else:
                 self._serve_file(path.lstrip("/"))
+
+        def do_OPTIONS(self):
+            """Handle CORS preflight requests."""
+            self.send_response(200)
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+            self.send_header("Access-Control-Allow-Headers", "Content-Type")
+            self.end_headers()
 
         def do_POST(self):
             path = self.path.split("?")[0]
@@ -163,6 +173,10 @@ def create_handler(upload_dir, mqtt_client, display_persistence, usage_stats, fo
                 self._handle_upload("background", MAX_BG_BYTES, (".png", ".jpg", ".jpeg"))
             elif path == "/api/font":
                 self._handle_font()
+            elif path == "/api/reset_stats":
+                self._handle_reset_stats()
+            elif path == "/api/restart":
+                self._handle_restart()
             else:
                 self._send(404, "text/plain", b"Not found")
 
@@ -177,6 +191,83 @@ def create_handler(upload_dir, mqtt_client, display_persistence, usage_stats, fo
             ok = entered == correct
             logger.info(f"[pin] entered={entered!r} correct={correct!r} ok={ok}")
             self._json_response({"ok": ok})
+
+        def _handle_reset_stats(self):
+            try:
+                # Preserve current number and category before reset
+                current_number = display_persistence.get_current_number()
+                current_category = display_persistence.get_category()
+                current_category_display = display_persistence.get_category_display_name()
+                
+                display_persistence.reset_all()
+                usage_stats.reset_stats()
+                logger.info("[api] reset_stats called - reset all display settings and stats, applying Burger Joint template")
+                
+                # Apply Burger Joint template but preserve number and category
+                burger_defaults = [
+                    ("nextUp", ""),
+                    ("layoutType", "Centered"),
+                    ("accentColor", "#E8372A"),
+                    ("accentGradientEnabled", "false"),
+                    ("bannerText", "Welcome — please wait for your number to be called"),
+                    ("bannerEnabled", "true"),
+                    ("facilityName", "CandyBar Service Centre"),
+                    ("fontSize", "96"),
+                    ("numberFontSize", "96"),
+                    ("categoryFontSize", "34"),
+                    ("facilityFontSize", "24"),
+                    ("bannerFontSize", "24"),
+                    ("nowServingFontSize", "16"),
+                    ("logoSize", "48"),
+                    ("logoVisible", "true"),
+                    ("logoPosition", "top-left"),
+                    ("backgroundImage", "qrc:/app/res/image/ff_burger_pattern.jpg"),
+                    ("backgroundFitMode", "crop"),
+                    ("backgroundScale", "1.0"),
+                    ("backgroundOffsetX", "0"),
+                    ("backgroundOffsetY", "0"),
+                    ("backgroundOrientation", "portrait"),
+                    ("backgroundType", "image"),
+                    ("backgroundVideoSource", ""),
+                    ("ttsLanguage", "en"),
+                    ("displayLanguage", "en"),
+                    ("ttsEnabled", "true"),
+                    ("audioMuted", "false"),
+                    ("audioVolumeStep", "3"),
+                    ("numberFont", "DM Mono"),
+                ]
+                
+                for key, value in burger_defaults:
+                    self._persist_and_publish(key, value)
+                
+                # Restore preserved number and category
+                if current_number:
+                    self._persist_and_publish("currentNumber", current_number)
+                if current_category:
+                    self._persist_and_publish("category", current_category)
+                if current_category_display:
+                    self._persist_and_publish("categoryDisplayName", current_category_display)
+                
+                self._json_response({"ok": True})
+            except Exception as e:
+                logger.error(f"[api] reset_stats error: {e}", exc_info=True)
+                self._json_response({"ok": False, "error": str(e)})
+
+        def _handle_restart(self):
+            logger.info("[api] restart called - restarting application")
+            self._json_response({"ok": True})
+            import sys
+            import os
+            import subprocess
+            import time
+            # Schedule restart in a separate thread so we can send the response first
+            def restart():
+                time.sleep(1)
+                python = sys.executable
+                subprocess.Popen([python] + original_argv)
+                os._exit(0)
+            import threading
+            threading.Thread(target=restart, daemon=True).start()
 
         def _persist_and_publish(self, key, payload):
             """Helper to persist a single key and publish it (used by both single and batch)."""
@@ -354,68 +445,120 @@ def create_handler(upload_dir, mqtt_client, display_persistence, usage_stats, fo
         # ── state builder ─────────────────────────────────────────────────────
 
         def _build_state(self) -> dict:
-            p = display_persistence
-            cats_str = str(p.load("categoriesList", "Category A"))
-            categories = [c.strip() for c in cats_str.split(",") if c.strip()]
-            current_cat = str(p.load("categoryDisplayName", "Category A"))
-            if current_cat not in categories:
-                categories.append(current_cat)
+            """Build the current display state. Always returns a valid dict, even on errors."""
+            try:
+                p = display_persistence
+                cats_str = str(p.load("categoriesList", "Category A"))
+                categories = [c.strip() for c in cats_str.split(",") if c.strip()]
+                current_cat = str(p.load("categoryDisplayName", "Category A"))
+                if current_cat not in categories:
+                    categories.append(current_cat)
 
-            logo_path = p.logo_path()
-            logo_url  = f"/uploads/{os.path.basename(logo_path)}" if logo_path and os.path.exists(logo_path) else ""
+                logo_path = p.logo_path()
+                logo_url  = f"/uploads/{os.path.basename(logo_path)}" if logo_path and os.path.exists(logo_path) else ""
 
-            bg_path = p.background_path()
-            if not bg_path:
-                bg_url = "qrc:/app/res/image/ff_burger_pattern.jpg"
-            elif bg_path.startswith("qrc:"):
-                bg_url = bg_path
-            elif os.path.exists(bg_path):
-                bg_url = f"/uploads/{os.path.basename(bg_path)}"
-            else:
-                bg_url = bg_path
+                bg_path = p.background_path()
+                if not bg_path:
+                    bg_url = "qrc:/app/res/image/ff_burger_pattern.jpg"
+                elif bg_path.startswith("qrc:"):
+                    bg_url = bg_path
+                elif os.path.exists(bg_path):
+                    bg_url = f"/uploads/{os.path.basename(bg_path)}"
+                else:
+                    bg_url = bg_path
 
-            return {
-                "currentNumber":          p.get_current_number(),
-                "nextUp":                 p.get_next_up(),
-                "layoutType":             p.get_layout(),
-                "accentColor":            p.load("accentColor", "#FFB84D"),
-                "accentGradientEnabled":  p.load("accentGradientEnabled", "false"),
-                "accentGradientDirection":p.load("accentGradientDirection", "top-to-bottom"),
-                "bannerText":             p.get_banner(),
-                "bannerEnabled":          p.load("bannerEnabled", "true"),
-                "facilityName":           p.get_facility(),
-                "fontSize":               p.get_font_size(),
-                "numberFontSize":         p.get_text_size("numberFontSize", p.get_font_size()),
-                "categoryFontSize":       p.get_text_size("categoryFontSize", 34),
-                "facilityFontSize":       p.get_text_size("facilityFontSize", 24),
-                "bannerFontSize":         p.get_text_size("bannerFontSize", 24),
-                "nowServingFontSize":     p.get_text_size("nowServingFontSize", 16),
-                "logoSize":               p.get_logo_size(),
-                "numberFont":             p.load("numberFont", "DM Mono"),
-                "categoryFont":           p.load("categoryFont", p.load("numberFont", "DM Mono")),
-                "facilityFont":           p.load("facilityFont", p.load("numberFont", "DM Mono")),
-                "bannerFont":             p.load("bannerFont", p.load("numberFont", "DM Mono")),
-                "nowServingFont":         p.load("nowServingFont", p.load("numberFont", "DM Mono")),
-                "logoUrl":                logo_url,
-                "logoVisible":            p.load("logoVisible", "true"),
-                "logoPosition":           p.load("logoPosition", "top-left"),
-                "backgroundImage":        bg_url,
-                "backgroundFitMode":     p.load("backgroundFitMode", "crop"),
-                "backgroundScale":       p.load("backgroundScale", "1.0"),
-                "backgroundOffsetX":     p.load("backgroundOffsetX", "0"),
-                "backgroundOffsetY":     p.load("backgroundOffsetY", "0"),
-                "backgroundOrientation":  p.load("backgroundOrientation", "portrait"),
-                "backgroundType":         p.load("backgroundType", "image"),
-                "backgroundVideoSource":  p.load("backgroundVideoSource", ""),
-                "category":               p.load("category", "A"),
-                "categoryDisplayName":    p.load("categoryDisplayName", "Category A"),
-                "ttsLanguage":            p.load("ttsLanguage", "en"),
-                "displayLanguage":        p.load("displayLanguage", "en"),
-                "ttsEnabled":             p.load("ttsEnabled", "true"),
-                "audioMuted":             p.load("audioMuted", "false"),
-                "audioVolumeStep":        p.load("audioVolumeStep", "3"),
-                "categories":             categories,
-            }
+                return {
+                    "currentNumber":          p.get_current_number(),
+                    "nextUp":                 p.get_next_up(),
+                    "layoutType":             p.get_layout(),
+                    "accentColor":            p.load("accentColor", "#FFB84D"),
+                    "accentGradientEnabled":  p.load("accentGradientEnabled", "false"),
+                    "accentGradientDirection":p.load("accentGradientDirection", "top-to-bottom"),
+                    "bannerText":             p.get_banner(),
+                    "bannerEnabled":          p.load("bannerEnabled", "true"),
+                    "facilityName":           p.get_facility(),
+                    "fontSize":               p.get_font_size(),
+                    "numberFontSize":         p.get_text_size("numberFontSize", p.get_font_size()),
+                    "categoryFontSize":       p.get_text_size("categoryFontSize", 34),
+                    "facilityFontSize":       p.get_text_size("facilityFontSize", 24),
+                    "bannerFontSize":         p.get_text_size("bannerFontSize", 24),
+                    "nowServingFontSize":     p.get_text_size("nowServingFontSize", 16),
+                    "logoSize":               p.get_logo_size(),
+                    "numberFont":             p.load("numberFont", "DM Mono"),
+                    "categoryFont":           p.load("categoryFont", p.load("numberFont", "DM Mono")),
+                    "facilityFont":           p.load("facilityFont", p.load("numberFont", "DM Mono")),
+                    "bannerFont":             p.load("bannerFont", p.load("numberFont", "DM Mono")),
+                    "nowServingFont":         p.load("nowServingFont", p.load("numberFont", "DM Mono")),
+                    "logoUrl":                logo_url,
+                    "logoVisible":            p.load("logoVisible", "true"),
+                    "logoPosition":           p.load("logoPosition", "top-left"),
+                    "backgroundImage":        bg_url,
+                    "backgroundFitMode":     p.load("backgroundFitMode", "crop"),
+                    "backgroundScale":       p.load("backgroundScale", "1.0"),
+                    "backgroundOffsetX":     p.load("backgroundOffsetX", "0"),
+                    "backgroundOffsetY":     p.load("backgroundOffsetY", "0"),
+                    "backgroundOrientation":  p.load("backgroundOrientation", "portrait"),
+                    "backgroundType":         p.load("backgroundType", "image"),
+                    "backgroundVideoSource":  p.load("backgroundVideoSource", ""),
+                    "category":               p.load("category", "A"),
+                    "categoryDisplayName":    p.load("categoryDisplayName", "Category A"),
+                    "ttsLanguage":            p.load("ttsLanguage", "en"),
+                    "displayLanguage":        p.load("displayLanguage", "en"),
+                    "ttsEnabled":             p.load("ttsEnabled", "true"),
+                    "audioMuted":             p.load("audioMuted", "false"),
+                    "audioVolumeStep":        p.load("audioVolumeStep", "3"),
+                    "audioPlaying":           getattr(audio_engine, 'playing', False),
+                    "categories":             categories,
+                    "mqttConnected":          getattr(mqtt_client, 'connected', False),
+                    "mqttStatus":             getattr(mqtt_client, 'status', 'N/A'),
+                }
+            except Exception as e:
+                logger.error(f"Error building state: {e}", exc_info=True)
+                # Return minimal valid state so admin.html can load
+                return {
+                    "currentNumber": "001",
+                    "nextUp": [],
+                    "layoutType": "Centered",
+                    "accentColor": "#FFB84D",
+                    "accentGradientEnabled": "false",
+                    "accentGradientDirection": "top-to-bottom",
+                    "bannerText": "Welcome — please wait for your number to be called",
+                    "bannerEnabled": "true",
+                    "facilityName": "CandyBar Service Centre",
+                    "fontSize": 96,
+                    "numberFontSize": 96,
+                    "categoryFontSize": 34,
+                    "facilityFontSize": 24,
+                    "bannerFontSize": 24,
+                    "nowServingFontSize": 16,
+                    "logoSize": 48,
+                    "numberFont": "DM Mono",
+                    "categoryFont": "DM Mono",
+                    "facilityFont": "DM Mono",
+                    "bannerFont": "DM Mono",
+                    "nowServingFont": "DM Mono",
+                    "logoUrl": "",
+                    "logoVisible": "true",
+                    "logoPosition": "top-left",
+                    "backgroundImage": "qrc:/app/res/image/ff_burger_pattern.jpg",
+                    "backgroundFitMode": "crop",
+                    "backgroundScale": "1.0",
+                    "backgroundOffsetX": "0",
+                    "backgroundOffsetY": "0",
+                    "backgroundOrientation": "portrait",
+                    "backgroundType": "image",
+                    "backgroundVideoSource": "",
+                    "category": "A",
+                    "categoryDisplayName": "Category A",
+                    "ttsLanguage": "en",
+                    "displayLanguage": "en",
+                    "ttsEnabled": "true",
+                    "audioMuted": "false",
+                    "audioVolumeStep": "3",
+                    "categories": ["Category A"],
+                    "mqttConnected": False,
+                    "mqttStatus": "Error",
+                }
 
         # ── low-level helpers ─────────────────────────────────────────────────
 
@@ -514,7 +657,7 @@ def create_handler(upload_dir, mqtt_client, display_persistence, usage_stats, fo
     return Handler
 
 
-def run(mqtt_client, display_persistence, usage_stats, font_manager):
+def run(mqtt_client, display_persistence, usage_stats, font_manager, audio_engine, original_argv):
     """Start the HTTP server. Runs forever — call from a daemon thread."""
     upload_dir = QStandardPaths.writableLocation(
         QStandardPaths.StandardLocation.AppLocalDataLocation
@@ -532,9 +675,17 @@ def run(mqtt_client, display_persistence, usage_stats, font_manager):
                 qf.close()
 
     local_ip = _get_local_ip()
-    logger.info(f"[admin-web] http://0.0.0.0:{PORT}  (LAN: http://{local_ip}:{PORT})")
+    logger.info(f"[admin-web] Starting server on http://0.0.0.0:{PORT}  (LAN: http://{local_ip}:{PORT})")
 
-    Handler = create_handler(upload_dir, mqtt_client, display_persistence, usage_stats, font_manager)
+    Handler = create_handler(upload_dir, mqtt_client, display_persistence, usage_stats, font_manager, audio_engine, original_argv)
     http.server.ThreadingHTTPServer.allow_reuse_address = True
-    with http.server.ThreadingHTTPServer(("0.0.0.0", PORT), Handler) as httpd:
-        httpd.serve_forever()
+    try:
+        with http.server.ThreadingHTTPServer(("0.0.0.0", PORT), Handler) as httpd:
+            logger.info(f"[admin-web] Server successfully bound to port {PORT}")
+            httpd.serve_forever()
+    except OSError as e:
+        logger.error(f"[admin-web] Failed to bind server to port {PORT}: {e}")
+        raise
+    except Exception as e:
+        logger.error(f"[admin-web] Server error: {e}", exc_info=True)
+        raise

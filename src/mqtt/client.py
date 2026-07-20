@@ -96,8 +96,13 @@ class MQTTClient(QObject):
             t.start()
             logger.info("MQTT connection started")
         except Exception as exc:
-            self._set_status(f"Error: {exc}")
-            logger.error(f"Failed to connect to MQTT broker: {exc}", exc_info=True)
+            # Show friendly message when broker is not configured/available
+            if "Connection refused" in str(exc):
+                self._set_status("Not configured")
+                logger.debug("MQTT broker not available (not configured)")
+            else:
+                self._set_status(f"Error: {exc}")
+                logger.error(f"Failed to connect to MQTT broker: {exc}", exc_info=True)
 
     @Slot()
     def disconnect_broker(self):
@@ -129,9 +134,13 @@ class MQTTClient(QObject):
 
     def _on_disconnect(self, client, userdata, rc):
         self._connected = False
-        self._set_status("Reconnecting…")
+        # Show friendly message instead of error when broker is not available
+        if rc == 0:
+            self._set_status("Disconnected")
+        else:
+            self._set_status("Not configured")
         self.connectedChanged.emit()
-        logger.warning("MQTT disconnected")
+        logger.debug("MQTT disconnected")
 
     def _on_message(self, client, userdata, msg):
         topic = msg.topic

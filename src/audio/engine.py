@@ -79,10 +79,17 @@ class AudioEngine(QObject):
     @volumeStep.setter
     def volumeStep(self, value):
         self._volume_step = max(0, min(len(self.VOLUME_STEPS) - 1, int(value)))
+        # Apply volume immediately if playing and not muted
+        if self._initialized and not self._muted and pygame.mixer.music.get_busy():
+            pygame.mixer.music.set_volume(self.VOLUME_STEPS[self._volume_step])
 
     @Property(float)
     def volume(self):
         return self.VOLUME_STEPS[self._volume_step]
+
+    @Property(bool)
+    def playing(self):
+        return self._playing
 
     @Property(str)
     def language(self):

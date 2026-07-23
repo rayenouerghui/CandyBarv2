@@ -37,6 +37,7 @@ MAX_FONT_BYTES = 2 * 1024 * 1024   # 2 MB
 
 PORT      = 8080
 SERVE_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(SERVE_DIR, '..'))
 
 # Cache for QRC resources
 _qrc_cache = {}
@@ -125,11 +126,17 @@ def create_handler(upload_dir, mqtt_client, display_persistence, usage_stats, fo
                     "DTGetaiGroteskDisplay-Black.otf": ":/app/res/font/DTGetaiGroteskDisplay-Black.otf",
                     "Gluten-Regular.ttf": ":/app/res/font/Gluten-Regular.ttf",
                     "LCMogi-A.otf": ":/app/res/font/LCMogi-A.otf",
-                    "Manosque-Regular.otf": ":/app/res/font/Manosque-Regular.otf"
+                    "Manosque-Regular.otf": ":/app/res/font/Manosque-Regular.otf",
+                    "FunPlayArabic_DEMO-Bold.otf": os.path.join(PROJECT_ROOT, "FunPlayArabic_DEMO-Bold.otf"),
+                    "TintaArabic-Bold.otf": os.path.join(PROJECT_ROOT, "TintaArabic-Bold.otf"),
                 }
                 if font_name in allowed_fonts:
                     mime = "font/otf" if font_name.endswith(".otf") else "font/ttf"
-                    self._serve_qrc(allowed_fonts[font_name], mime)
+                    font_path = allowed_fonts[font_name]
+                    if isinstance(font_path, str) and font_path.startswith(":"):
+                        self._serve_qrc(font_path, mime)
+                    else:
+                        self._serve_static(font_path)
                 else:
                     self._send(404, "text/plain", b"Not found")
             elif path == "/favicon.ico":
@@ -235,6 +242,11 @@ def create_handler(upload_dir, mqtt_client, display_persistence, usage_stats, fo
                     ("audioMuted", "false"),
                     ("audioVolumeStep", "3"),
                     ("numberFont", "DM Mono"),
+                    ("numberColor", "#E8372A"),
+                    ("categoryColor", "#E8372A"),
+                    ("facilityColor", "#E8372A"),
+                    ("bannerColor", "#FFFFFF"),
+                    ("nowServingColor", "#FFFFFF"),
                 ]
                 
                 for key, value in burger_defaults:
@@ -489,6 +501,11 @@ def create_handler(upload_dir, mqtt_client, display_persistence, usage_stats, fo
                     "facilityFont":           p.load("facilityFont", p.load("numberFont", "DM Mono")),
                     "bannerFont":             p.load("bannerFont", p.load("numberFont", "DM Mono")),
                     "nowServingFont":         p.load("nowServingFont", p.load("numberFont", "DM Mono")),
+                    "numberColor":            p.load("numberColor", "#FFB84D"),
+                    "categoryColor":          p.load("categoryColor", "#FFB84D"),
+                    "facilityColor":          p.load("facilityColor", "#FFB84D"),
+                    "bannerColor":            p.load("bannerColor", "#FFFFFF"),
+                    "nowServingColor":        p.load("nowServingColor", "#FFFFFF"),
                     "logoUrl":                logo_url,
                     "logoVisible":            p.load("logoVisible", "true"),
                     "logoPosition":           p.load("logoPosition", "top-left"),
@@ -502,6 +519,8 @@ def create_handler(upload_dir, mqtt_client, display_persistence, usage_stats, fo
                     "backgroundVideoSource":  p.load("backgroundVideoSource", ""),
                     "category":               p.load("category", "A"),
                     "categoryDisplayName":    p.load("categoryDisplayName", "Category A"),
+                    "categoryVisible":        p.load("categoryVisible", "true"),
+                    "categoryAudioEnabled":   p.load("categoryAudioEnabled", "true"),
                     "ttsLanguage":            p.load("ttsLanguage", "en"),
                     "displayLanguage":        p.load("displayLanguage", "en"),
                     "ttsEnabled":             p.load("ttsEnabled", "true"),
@@ -537,6 +556,11 @@ def create_handler(upload_dir, mqtt_client, display_persistence, usage_stats, fo
                     "facilityFont": "DM Mono",
                     "bannerFont": "DM Mono",
                     "nowServingFont": "DM Mono",
+                    "numberColor": "#FFB84D",
+                    "categoryColor": "#FFB84D",
+                    "facilityColor": "#FFB84D",
+                    "bannerColor": "#FFFFFF",
+                    "nowServingColor": "#FFFFFF",
                     "logoUrl": "",
                     "logoVisible": "true",
                     "logoPosition": "top-left",
@@ -550,6 +574,8 @@ def create_handler(upload_dir, mqtt_client, display_persistence, usage_stats, fo
                     "backgroundVideoSource": "",
                     "category": "A",
                     "categoryDisplayName": "Category A",
+                    "categoryVisible": "true",
+                    "categoryAudioEnabled": "true",
                     "ttsLanguage": "en",
                     "displayLanguage": "en",
                     "ttsEnabled": "true",

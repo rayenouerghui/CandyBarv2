@@ -15,6 +15,8 @@
     @font-face{font-family:'Gluten';src:url('/fonts/Gluten-Regular.ttf') format('truetype')}
     @font-face{font-family:'LC Mogi';src:url('/fonts/LCMogi-A.otf') format('opentype')}
     @font-face{font-family:'Manosque';src:url('/fonts/Manosque-Regular.otf') format('opentype')}
+    @font-face{font-family:'Fun Play Arabic_DEMO';src:url('/fonts/FunPlayArabic_DEMO-Bold.otf') format('opentype')}
+    @font-face{font-family:'Tinta Arabic';src:url('/fonts/TintaArabic-Bold.otf') format('opentype')}
 
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
@@ -1405,6 +1407,85 @@
       pointer-events:none;
       visibility:hidden;
     }
+
+    #pin-modal{
+      position:fixed;
+      inset:0;
+      background:var(--bg);
+      z-index:9999;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+      transition:opacity 0.3s var(--ease-out);
+    }
+    #pin-modal.hide{
+      opacity:0;
+      pointer-events:none;
+      visibility:hidden;
+    }
+    .pin-modal-content{
+      background:var(--bg-elevated);
+      border-radius:var(--r-lg);
+      padding:32px;
+      width:100%;
+      max-width:320px;
+      box-shadow:var(--shadow-xl);
+      text-align:center;
+    }
+    .pin-modal-title{
+      font-size:20px;
+      font-weight:700;
+      color:var(--text);
+      margin-bottom:8px;
+    }
+    .pin-modal-desc{
+      font-size:14px;
+      color:var(--text-secondary);
+      margin-bottom:24px;
+    }
+    .pin-input{
+      width:100%;
+      padding:16px;
+      font-size:24px;
+      font-weight:700;
+      text-align:center;
+      letter-spacing:8px;
+      border:2px solid var(--border);
+      border-radius:var(--r-md);
+      background:var(--bg);
+      color:var(--text);
+      margin-bottom:16px;
+    }
+    .pin-input:focus{
+      outline:none;
+      border-color:var(--primary);
+      box-shadow:0 0 0 3px var(--primary-soft);
+    }
+    .pin-error{
+      font-size:13px;
+      color:var(--danger);
+      margin-bottom:16px;
+      min-height:20px;
+    }
+    .pin-submit{
+      width:100%;
+      padding:14px;
+      background:var(--primary);
+      color:white;
+      border:none;
+      border-radius:var(--r-md);
+      font-weight:600;
+      font-size:15px;
+      cursor:pointer;
+      transition:background var(--fast) var(--ease-out);
+    }
+    .pin-submit:hover{
+      background:var(--primary-hover);
+    }
+    .pin-submit:active{
+      transform:scale(0.98);
+    }
     .loader{
       width:40px;
       height:40px;
@@ -1630,6 +1711,17 @@
   <div class="loader"></div>
   <div class="loading-text">Loading CandyBar Admin...</div>
 </div>
+
+<div id="pin-modal" class="hide">
+  <div class="pin-modal-content">
+    <div class="pin-modal-title">Enter PIN</div>
+    <div class="pin-modal-desc">Enter your 4-digit admin PIN to access the control panel</div>
+    <input type="password" id="pin_entry" class="pin-input" maxlength="4" inputmode="numeric" placeholder="••••"/>
+    <div id="pin_error" class="pin-error"></div>
+    <button class="pin-submit" onclick="verifyPin()">Unlock</button>
+  </div>
+</div>
+
 <div id="app">
   <!-- header -->
   <div class="hdr">
@@ -1740,6 +1832,10 @@
           <span class="slider-lbl">Display name</span>
           <input type="text" id="cat_name" placeholder="Category A"/>
         </div>
+        <div class="switch-container">
+          <span class="switch-label">Show category badge</span>
+          <button id="cat_visible_btn" class="ios-switch on" onclick="toggleCategoryVisibility()"></button>
+        </div>
         <input type="hidden" id="cat_id" value="A"/>
         <button class="gi save-btn" onclick="saveCategory()">Save category</button>
       </div>
@@ -1754,13 +1850,20 @@
       <div class="acc-body" style="gap:16px">
         <div class="slider-row" style="gap:8px">
           <span class="slider-lbl">Facility name</span>
-          <input type="text" id="facility" placeholder="Facility name"/>
+          <input type="text" id="facility" placeholder="Facility name" onblur="saveFacility()"/>
+        </div>
+        <div class="switch-container">
+          <span class="switch-label">Show facility name on-screen</span>
+          <button id="facility_visible_btn" class="ios-switch on" onclick="toggleFacilityVisibility()"></button>
         </div>
         <div class="slider-row" style="gap:8px">
           <span class="slider-lbl">Banner message</span>
-          <textarea id="banner" rows="2" placeholder="Banner message…"></textarea>
+          <textarea id="banner" rows="2" placeholder="Banner message…" onblur="saveBanner()"></textarea>
         </div>
-        <button class="gi save-btn" onclick="saveGeneral()">Save</button>
+        <div class="switch-container">
+          <span class="switch-label">Show banner on-screen</span>
+          <button id="banner_btn" class="ios-switch on" onclick="toggleBanner()"></button>
+        </div>
       </div>
     </div>
 
@@ -1999,28 +2102,6 @@
       </div>
     </div>
 
-    <!-- Accent color -->
-    <div class="card">
-      <button class="acc-head" onclick="toggleCard(this)">
-        <span class="acc-ic" id="acc_swatch" style="border-radius:10px;background:var(--acc);width:36px;height:36px;margin:auto;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06)" style="border-radius:50%;background:var(--acc);width:20px;height:20px;margin:auto"></span>
-        <span class="acc-t"><b>Accent color</b><small>Highlights the number &amp; category</small></span>
-        <span class="acc-chev">⌄</span>
-      </button>
-      <div class="acc-body" style="gap:16px">
-        <canvas id="color_canvas" width="300" height="140"></canvas>
-        <input type="range" class="hue-range" id="hue_slider" min="0" max="360"
-               value="30" oninput="updateHue(this.value)"/>
-        <input type="text" id="color_hex" placeholder="#FFB84D" maxlength="7"
-               oninput="updateHex(this.value)"/>
-        <div class="switch-container">
-          <span class="switch-label">Gradient on accent bar</span>
-          <button id="grad_btn" class="ios-switch" onclick="toggleGrad()"></button>
-        </div>
-      </div>
-    </div>
-
-
-
     <!-- Upload & Adjust Background -->
     <div class="card">
       <button class="acc-head" onclick="toggleCard(this)">
@@ -2093,99 +2174,65 @@
       </div>
     </div>
 
-    <!-- Text size -->
-    <div class="card">
-      <button class="acc-head" onclick="toggleCard(this)">
-        <span class="acc-ic" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--primary)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg></span>
-        <span class="acc-t"><b>Text size</b><small id="size_summary">Number 96px</small></span>
-        <span class="acc-chev">⌄</span>
-      </button>
-      <div class="acc-body" style="gap:20px">
-        <div class="hint-txt">One slider per element — drag to see it change live in the preview above.</div>
-
-        <div class="size-row">
-          <div class="size-row-top">
-            <span class="size-row-label">Queue number</span>
-            <span class="size-row-val" id="num_fs_val">96px</span>
-          </div>
-          <input type="range" id="num_fs_slider" min="8" max="240" step="1" value="96"
-                 oninput="onTextSizeSlider('numberFontSize', this.value, 'num_fs_val', 'prev_num', 'fontSize')"/>
-        </div>
-
-        <div class="size-row">
-          <div class="size-row-top">
-            <span class="size-row-label">Category badge</span>
-            <span class="size-row-val" id="cat_fs_val">34px</span>
-          </div>
-          <input type="range" id="cat_fs_slider" min="8" max="240" step="1" value="34"
-                 oninput="onTextSizeSlider('categoryFontSize', this.value, 'cat_fs_val', 'prev_cat', 'fontSize')"/>
-        </div>
-
-        <div class="size-row">
-          <div class="size-row-top">
-            <span class="size-row-label">Facility name</span>
-            <span class="size-row-val" id="fac_fs_val">24px</span>
-          </div>
-          <input type="range" id="fac_fs_slider" min="8" max="240" step="1" value="24"
-                 oninput="onTextSizeSlider('facilityFontSize', this.value, 'fac_fs_val', 'prev_fac', 'fontSize')"/>
-        </div>
-
-        <div class="size-row">
-          <div class="size-row-top">
-            <span class="size-row-label">Banner message</span>
-            <span class="size-row-val" id="banner_fs_val">24px</span>
-          </div>
-          <input type="range" id="banner_fs_slider" min="8" max="240" step="1" value="24"
-                 oninput="onTextSizeSlider('bannerFontSize', this.value, 'banner_fs_val', 'prev_fac', 'fontSize')"/>
-        </div>
-
-        <div class="size-row">
-          <div class="size-row-top">
-            <span class="size-row-label">"Now serving" label</span>
-            <span class="size-row-val" id="serve_fs_val">16px</span>
-          </div>
-          <input type="range" id="serve_fs_slider" min="8" max="240" step="1" value="16"
-                 oninput="onTextSizeSlider('nowServingFontSize', this.value, 'serve_fs_val', 'prev_label', 'fontSize')"/>
-        </div>
-      </div>
-    </div>
-
-    <!-- Font style -->
-    <div class="card">
+    <!-- Font - unified section with tabs for each element -->
+    <div class="card open">
       <button class="acc-head" onclick="toggleCard(this)">
         <span class="acc-ic" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--primary)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg></span>
-        <span class="acc-t"><b>Font style</b><small id="font_summary">Number · DM Mono</small></span>
+        <span class="acc-t"><b>Font</b><small id="font_summary">Number · 96px · DM Mono</small></span>
         <span class="acc-chev">⌄</span>
       </button>
       <div class="acc-body" style="gap:16px">
-        <div class="hint-txt">Pick which text to style, then tap a font to preview and apply it — just like the templates above.</div>
+        <div class="hint-txt">Customize font, size, and color for each text element individually.</div>
 
+        <!-- Element tabs -->
         <div class="font-target-grid" id="font_target_grid">
-          <button class="gi on" data-target="numberFont"     onclick="setFontTarget('numberFont')">Number</button>
-          <button class="gi"    data-target="categoryFont"   onclick="setFontTarget('categoryFont')">Category</button>
-          <button class="gi"    data-target="facilityFont"   onclick="setFontTarget('facilityFont')">Facility</button>
-          <button class="gi"    data-target="bannerFont"     onclick="setFontTarget('bannerFont')">Banner</button>
-          <button class="gi"    data-target="nowServingFont" onclick="setFontTarget('nowServingFont')">Serving</button>
+          <button class="gi on" data-target="number" onclick="setFontElement('number')">Number</button>
+          <button class="gi"    data-target="category" onclick="setFontElement('category')">Category</button>
+          <button class="gi"    data-target="facility" onclick="setFontElement('facility')">Facility</button>
+          <button class="gi"    data-target="banner" onclick="setFontElement('banner')">Banner</button>
+          <button class="gi"    data-target="serving" onclick="setFontElement('serving')">Serving</button>
         </div>
 
-        <div class="font-grid" id="font_grid"></div>
+        <!-- Font family selector -->
+        <div class="slider-row">
+          <span class="slider-lbl">Font family</span>
+          <select id="font_family_select" onchange="setFontFamily(this.value)">
+            <option value="DM Mono">DM Mono</option>
+            <option value="Barriecito">Barriecito</option>
+            <option value="DT Getai Grotesk Display Black">DT Getai Grotesk Display Black</option>
+            <option value="Gluten">Gluten</option>
+            <option value="LC Mogi">LC Mogi</option>
+            <option value="Manosque">Manosque</option>
+          </select>
+        </div>
 
+        <!-- Size slider -->
+        <div class="slider-row">
+          <div class="slider-header">
+            <span class="slider-lbl">Size</span>
+            <span class="slider-val" id="font_size_val">96px</span>
+          </div>
+          <input type="range" id="font_size_slider" min="8" max="240" step="1" value="96"
+                 oninput="onFontSizeSlider(this.value)"/>
+        </div>
+
+        <!-- Color picker -->
+        <div class="slider-row">
+          <div class="slider-header">
+            <span class="slider-lbl">Color</span>
+            <span class="slider-val" id="font_color_val">#FFB84D</span>
+          </div>
+          <input type="color" id="font_color_picker" value="#FFB84D"
+                 oninput="onFontColorPicker(this.value)"/>
+        </div>
+
+        <!-- Custom font upload -->
         <label class="upload" for="font_file" id="font_upload_area">
           <div class="upload-hint">Upload custom font <span style="color:var(--text-tertiary);font-weight:400">TTF/OTF, max 2 MB</span></div>
         </label>
         <input type="file" id="font_file" accept=".ttf,.otf"
                style="display:none" onchange="uploadFont(this)"/>
       </div>
-    </div>
-
-    <!-- Banner toggle (single control — no body to expand, so it's a plain row) -->
-    <div class="card" style="flex-direction:row;align-items:center;gap:12px;padding:20px">
-      <span class="acc-ic" style="flex:none;width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--primary)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></span>
-      <span class="acc-t" style="flex:1;display:flex;flex-direction:column;gap:2px">
-        <b style="font-size:15px;font-weight:600">Footer banner</b>
-        <small style="font-size:12px;color:var(--text-secondary);font-weight:400">Show the scrolling message on-screen</small>
-      </span>
-      <button id="banner_btn" class="ios-switch on" style="flex:none" onclick="toggleBanner()"></button>
     </div>
 
   </div><!-- end theme pane -->
@@ -2220,11 +2267,13 @@ let curBg = 'qrc:/app/res/image/ff_burger_pattern.jpg';
 let muted = false, volStep = 3, ttsOn = true, bannerOn = true;
 let gradOn = false, currentHue = 30, currentSat = 100, currentVal = 100;
 let isDragging = false, pickerCanvas, pickerCtx;
+let isBgUploaded = false; // Track if current background is custom uploaded
 let _confirmT;
 let logoVisible = true;
+let categoryVisible = true;
+let facilityVisible = true;
 let bgScale = 1.0, bgOffsetX = 0, bgOffsetY = 0;
 let _curLs = 48;
-let isBgUploaded = false; // Track if current background is uploaded
 let bgFitMode = 'crop'; // Track current fit mode
 
 // Background adjustment transform state
@@ -2288,15 +2337,17 @@ function videoUrl(id){ return window.location.origin + `/videos/${id}.mp4`; }
 
 /* --- Font style catalog — used by the big-preview font picker --- */
 const FONT_CATALOG = [
-  { family:'DM Mono',                       label:'DM Mono' },
-  { family:'Barriecito',                    label:'Barriecito' },
-  { family:'DT Getai Grotesk Display Black',label:'Getai Grotesk' },
-  { family:'Gluten',                        label:'Gluten' },
-  { family:'LC Mogi',                       label:'LC Mogi' },
-  { family:'Manosque',                      label:'Manosque' },
-  { family:'monospace',                     label:'Monospace' },
-  { family:'sans-serif',                    label:'Sans-serif' },
-  { family:'serif',                         label:'Serif' },
+  { family:'DM Mono',                       label:'DM Mono', languages:['en','fr','ar'] },
+  { family:'Barriecito',                    label:'Barriecito', languages:['en','fr','ar'] },
+  { family:'DT Getai Grotesk Display Black',label:'Getai Grotesk', languages:['en','fr','ar'] },
+  { family:'Gluten',                        label:'Gluten', languages:['en','fr','ar'] },
+  { family:'LC Mogi',                       label:'LC Mogi', languages:['en','fr','ar'] },
+  { family:'Manosque',                      label:'Manosque', languages:['en','fr','ar'] },
+  { family:'Fun Play Arabic_DEMO',          label:'Fun Play Arabic', languages:['ar'] },
+  { family:'Tinta Arabic',                  label:'Tinta Arabic', languages:['ar'] },
+  { family:'monospace',                     label:'Monospace', languages:['en','fr','ar'] },
+  { family:'sans-serif',                    label:'Sans-serif', languages:['en','fr','ar'] },
+  { family:'serif',                         label:'Serif', languages:['en','fr','ar'] },
 ];
 let CUSTOM_FONTS = []; // populated from /api/fonts — {family, url}
 
@@ -2342,6 +2393,123 @@ function updateSizeSummary(key, v) {
   if (key !== 'numberFontSize') return;
   const s = document.getElementById('size_summary');
   if (s) s.textContent = 'Number ' + v + 'px';
+}
+
+/* ===== SECTION =====
+   UNIFIED FONT SECTION
+===== SECTION ===== */
+// Element configuration mapping
+const FONT_ELEMENT_CONFIG = {
+  number: {
+    fontKey: 'numberFont',
+    sizeKey: 'numberFontSize',
+    colorKey: 'numberColor',
+    previewId: 'prev_num',
+    defaultSize: 96,
+    defaultColor: '#FFB84D'
+  },
+  category: {
+    fontKey: 'categoryFont',
+    sizeKey: 'categoryFontSize',
+    colorKey: 'categoryColor',
+    previewId: 'prev_cat',
+    defaultSize: 34,
+    defaultColor: '#FFB84D'
+  },
+  facility: {
+    fontKey: 'facilityFont',
+    sizeKey: 'facilityFontSize',
+    colorKey: 'facilityColor',
+    previewId: 'prev_fac',
+    defaultSize: 24,
+    defaultColor: '#FFB84D'
+  },
+  banner: {
+    fontKey: 'bannerFont',
+    sizeKey: 'bannerFontSize',
+    colorKey: 'bannerColor',
+    previewId: 'prev_fac',
+    defaultSize: 24,
+    defaultColor: '#FFFFFF'
+  },
+  serving: {
+    fontKey: 'nowServingFont',
+    sizeKey: 'nowServingFontSize',
+    colorKey: 'nowServingColor',
+    previewId: 'prev_label',
+    defaultSize: 16,
+    defaultColor: '#FFFFFF'
+  }
+};
+
+let _currentFontElement = 'number';
+
+function setFontElement(element) {
+  _currentFontElement = element;
+  const config = FONT_ELEMENT_CONFIG[element];
+
+  // Update tab buttons
+  document.querySelectorAll('#font_target_grid .gi').forEach(b =>
+    b.classList.toggle('on', b.dataset.target === element));
+
+  // Update controls with current values
+  const fontSelect = document.getElementById('font_family_select');
+  const sizeSlider = document.getElementById('font_size_slider');
+  const sizeVal = document.getElementById('font_size_val');
+  const colorPicker = document.getElementById('font_color_picker');
+  const colorVal = document.getElementById('font_color_val');
+
+  if (fontSelect) fontSelect.value = _fontValues[config.fontKey] || 'DM Mono';
+  if (sizeSlider) sizeSlider.value = _fontValues[config.sizeKey] || config.defaultSize;
+  if (sizeVal) sizeVal.textContent = (_fontValues[config.sizeKey] || config.defaultSize) + 'px';
+  if (colorPicker) colorPicker.value = _fontValues[config.colorKey] || config.defaultColor;
+  if (colorVal) colorVal.textContent = _fontValues[config.colorKey] || config.defaultColor;
+
+  // Update summary
+  const summary = document.getElementById('font_summary');
+  if (summary) {
+    const label = element.charAt(0).toUpperCase() + element.slice(1);
+    const size = _fontValues[config.sizeKey] || config.defaultSize;
+    const font = _fontValues[config.fontKey] || 'DM Mono';
+    summary.textContent = `${label} · ${size}px · ${font}`;
+  }
+}
+
+function setFontFamily(family) {
+  const config = FONT_ELEMENT_CONFIG[_currentFontElement];
+  _fontValues[config.fontKey] = family;
+  setFontFor(config.fontKey, family);
+  setFontElement(_currentFontElement); // Update summary
+}
+
+function onFontSizeSlider(value) {
+  const config = FONT_ELEMENT_CONFIG[_currentFontElement];
+  const v = Math.max(8, Math.min(240, parseInt(value) || 8));
+
+  _fontValues[config.sizeKey] = v;
+  document.getElementById('font_size_val').textContent = v + 'px';
+
+  // Update preview
+  const el = document.getElementById(config.previewId);
+  if (el) el.style.fontSize = v + 'px';
+
+  debouncedPubTextSize(config.sizeKey, v);
+  setFontElement(_currentFontElement); // Update summary
+  showConfirm();
+}
+
+function onFontColorPicker(color) {
+  const config = FONT_ELEMENT_CONFIG[_currentFontElement];
+  _fontValues[config.colorKey] = color;
+  document.getElementById('font_color_val').textContent = color;
+
+  // Update preview
+  const el = document.getElementById(config.previewId);
+  if (el) el.style.color = color;
+
+  pub(config.colorKey, color);
+  setFontElement(_currentFontElement); // Update summary
+  showConfirm();
 }
 
 function showConfirm() {
@@ -2512,6 +2680,7 @@ function setDisplayLanguage(lang) {
   const names = {en:'English', fr:'Français', ar:'العربية'};
   const s = document.getElementById('disp_lang_summary');
   if (s) s.textContent = names[lang] || lang;
+  if (typeof buildFontGrid === 'function') buildFontGrid();
   pub('displayLanguage', lang);
   showConfirm();
 }
@@ -2847,11 +3016,21 @@ async function saveCategory() {
   if (s) s.textContent = name || 'Category A';
   showConfirm();
 }
-async function saveGeneral() {
+async function saveFacility() {
   const fac = document.getElementById('facility').value.trim();
-  const ban = document.getElementById('banner').value.trim();
   if (fac) { await pub('facilityName', fac); document.getElementById('prev_fac').textContent = fac; }
+  showConfirm();
+}
+async function saveBanner() {
+  const ban = document.getElementById('banner').value.trim();
   if (ban) await pub('bannerText', ban);
+  showConfirm();
+}
+function toggleFacilityVisibility() {
+  facilityVisible = !facilityVisible;
+  const btn = document.getElementById('facility_visible_btn');
+  if (btn) btn.classList.toggle('on', facilityVisible);
+  pub('logoVisible', facilityVisible ? 'true' : 'false');
   showConfirm();
 }
 function toggleTts() {
@@ -2885,6 +3064,50 @@ async function removePin() {
   showConfirm();
 }
 
+async function verifyPin() {
+  const pinInput = document.getElementById('pin_entry');
+  const errorDiv = document.getElementById('pin_error');
+  const entered = pinInput.value.trim();
+
+  if (entered.length !== 4 || !/^\d{4}$/.test(entered)) {
+    errorDiv.textContent = 'Please enter a 4-digit PIN';
+    return;
+  }
+
+  try {
+    const r = await fetch('/api/pin', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({pin: entered})
+    });
+    const d = await r.json();
+
+    if (d.ok) {
+      // PIN correct - hide modal and show app
+      document.getElementById('pin-modal').classList.add('hide');
+      document.getElementById('app').style.display = 'flex';
+      // Save PIN to localStorage for convenience
+      try { localStorage.setItem('cbAdminPin', entered); } catch(e) {}
+    } else {
+      errorDiv.textContent = 'Incorrect PIN';
+      pinInput.value = '';
+      pinInput.focus();
+    }
+  } catch(e) {
+    errorDiv.textContent = 'Connection error';
+    console.error('PIN verification error:', e);
+  }
+}
+
+function showPinModal() {
+  document.getElementById('pin-modal').classList.remove('hide');
+  document.getElementById('app').style.display = 'none';
+  const pinInput = document.getElementById('pin_entry');
+  pinInput.value = '';
+  pinInput.focus();
+  document.getElementById('pin_error').textContent = '';
+}
+
 /* ===== SECTION =====
    THEME CONTROLS
 ===== SECTION ===== */
@@ -2901,6 +3124,16 @@ function toggleBanner() {
   const btn = document.getElementById('banner_btn');
   btn.classList.toggle('on', bannerOn);
   pub('bannerEnabled', bannerOn ? 'true' : 'false');
+}
+function toggleCategoryVisibility() {
+  categoryVisible = !categoryVisible;
+  const btn = document.getElementById('cat_visible_btn');
+  if (btn) btn.classList.toggle('on', categoryVisible);
+  const catPreview = document.getElementById('prev_cat');
+  if (catPreview) catPreview.style.display = categoryVisible ? '' : 'none';
+  pub('categoryVisible', categoryVisible ? 'true' : 'false');
+  pub('categoryAudioEnabled', categoryVisible ? 'true' : 'false');
+  showConfirm();
 }
 function toggleLogoVisibility() {
   logoVisible = !logoVisible;
@@ -2935,9 +3168,12 @@ function setFontFor(key, family) {
    pattern as the "Ready-made templates" grid above
 ===== SECTION ===== */
 function allFonts() {
+  const lang = (_dispLang || 'en').toLowerCase();
   return [
-    ...FONT_CATALOG,
-    ...CUSTOM_FONTS.map(f => ({ family: f.family, label: f.family, custom: true }))
+    ...FONT_CATALOG.filter(f => !f.languages || f.languages.includes(lang)),
+    ...CUSTOM_FONTS
+      .filter(f => !f.family || !FONT_CATALOG.some(b => b.family === f.family))
+      .map(f => ({ family: f.family, label: f.family, custom: true, languages: ['en','fr','ar'] }))
   ];
 }
 function setFontTarget(target) {
@@ -3096,24 +3332,53 @@ function updateBgPreviewTransform() {
   el.style.transformOrigin = 'center center';
 }
 function onBgZoom(v) {
+  // Only allow zoom adjustments for custom uploaded backgrounds
+  if (!isBgUploaded) {
+    showConfirm();
+    // Reset slider to default
+    document.getElementById('bg_zoom_slider').value = 100;
+    return;
+  }
   bgScale = Math.max(0.5, Math.min(2.0, parseFloat(v) / 100));
   document.getElementById('bg_zoom_val').textContent = Math.round(bgScale * 100) + '%';
   updateBgPreviewTransform();
   debouncedPubBgScale(bgScale);
 }
 function onBgMoveX(v) {
+  // Only allow move adjustments for custom uploaded backgrounds
+  if (!isBgUploaded) {
+    showConfirm();
+    // Reset slider to default
+    document.getElementById('bg_move_x_slider').value = 0;
+    return;
+  }
   bgOffsetX = parseInt(v) || 0;
   document.getElementById('bg_move_x_val').textContent = bgOffsetX + 'px';
   updateBgPreviewTransform();
   debouncedPubBgOffsetX(bgOffsetX);
 }
 function onBgMoveY(v) {
+  // Only allow move adjustments for custom uploaded backgrounds
+  if (!isBgUploaded) {
+    showConfirm();
+    // Reset slider to default
+    document.getElementById('bg_move_y_slider').value = 0;
+    return;
+  }
   bgOffsetY = parseInt(v) || 0;
   document.getElementById('bg_move_y_val').textContent = bgOffsetY + 'px';
   updateBgPreviewTransform();
   debouncedPubBgOffsetY(bgOffsetY);
 }
 function setBgFitMode(mode) {
+  // Only allow fit mode changes for custom uploaded backgrounds
+  if (!isBgUploaded) {
+    showConfirm();
+    // Reset select to current fit mode
+    const bgFitModeSelect = document.getElementById('bg_fit_mode');
+    if (bgFitModeSelect) bgFitModeSelect.value = bgFitMode;
+    return;
+  }
   bgFitMode = mode;
   pub('backgroundFitMode', mode);
 }
@@ -3202,7 +3467,10 @@ async function applyTpl(t) {
     const card = document.getElementById('tpl_' + t.id);
     if (card) card.classList.add('on');
     setAccLocal(t.acc);
-  
+
+  // Reset adjustment state when applying template
+  isBgUploaded = false; // Templates are not custom uploads
+  bgFitMode = t.fit || 'crop'; // Use template's fit mode
   bgScale = 1.0; bgOffsetX = 0; bgOffsetY = 0;
   const zoomSlider = document.getElementById('bg_zoom_slider');
   const moveXSlider = document.getElementById('bg_move_x_slider');
@@ -3210,12 +3478,14 @@ async function applyTpl(t) {
   const zoomVal = document.getElementById('bg_zoom_val');
   const moveXVal = document.getElementById('bg_move_x_val');
   const moveYVal = document.getElementById('bg_move_y_val');
+  const bgFitModeSelect = document.getElementById('bg_fit_mode');
   if (zoomSlider) zoomSlider.value = 100;
   if (moveXSlider) moveXSlider.value = 0;
   if (moveYSlider) moveYSlider.value = 0;
   if (zoomVal) zoomVal.textContent = '100%';
   if (moveXVal) moveXVal.textContent = '0px';
   if (moveYVal) moveYVal.textContent = '0px';
+  if (bgFitModeSelect) bgFitModeSelect.value = bgFitMode;
   if (typeof updateBgPreviewTransform === 'function') updateBgPreviewTransform();
   
   // Handle different template types
@@ -3291,9 +3561,16 @@ async function applyTpl(t) {
   }
 }
 function removeBg() {
+  // Only allow removal if current background is custom uploaded
+  if (!isBgUploaded) {
+    showConfirm();
+    return;
+  }
+
   const def = 'qrc:/app/res/image/ff_burger_pattern.jpg';
   curBg = def;
   isBgUploaded = false; // Reset to template background
+  bgFitMode = 'crop'; // Reset to default template fit mode
   bgScale = 1.0; bgOffsetX = 0; bgOffsetY = 0;
   const zoomSlider = document.getElementById('bg_zoom_slider');
   const moveXSlider = document.getElementById('bg_move_x_slider');
@@ -3301,12 +3578,14 @@ function removeBg() {
   const zoomVal = document.getElementById('bg_zoom_val');
   const moveXVal = document.getElementById('bg_move_x_val');
   const moveYVal = document.getElementById('bg_move_y_val');
+  const bgFitModeSelect = document.getElementById('bg_fit_mode');
   if (zoomSlider) zoomSlider.value = 100;
   if (moveXSlider) moveXSlider.value = 0;
   if (moveYSlider) moveYSlider.value = 0;
   if (zoomVal) zoomVal.textContent = '100%';
   if (moveXVal) moveXVal.textContent = '0px';
   if (moveYVal) moveYVal.textContent = '0px';
+  if (bgFitModeSelect) bgFitModeSelect.value = 'crop';
   if (typeof updateBgPreviewTransform === 'function') updateBgPreviewTransform();
   pubBatch([
     ['backgroundType', 'image'],
@@ -3378,8 +3657,10 @@ function setAccLocal(hex) {
   document.documentElement.style.setProperty('--acc', hex);
   document.getElementById('prev_bar').style.background = hex;
   document.getElementById('prev_cat').style.color = hex;
-  document.getElementById('color_hex').value = hex;
-  const sw = document.getElementById('acc_swatch'); if (sw) sw.style.background = hex;
+  const colorHex = document.getElementById('color_hex');
+  if (colorHex) colorHex.value = hex;
+  const sw = document.getElementById('acc_swatch');
+  if (sw) sw.style.background = hex;
   const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
   const max=Math.max(r,g,b)/255,min=Math.min(r,g,b)/255;
   let h=0;
@@ -3387,7 +3668,8 @@ function setAccLocal(hex) {
     if(max===rm)h=((gm-bm)/d+(gm<bm?6:0))*60;
     else if(max===gm)h=((bm-rm)/d+2)*60;
     else h=((rm-gm)/d+4)*60;}
-  document.getElementById('hue_slider').value = Math.round(h);
+  const hueSlider = document.getElementById('hue_slider');
+  if (hueSlider) hueSlider.value = Math.round(h);
 }
 
 /* ===== SECTION =====
@@ -3403,17 +3685,27 @@ async function uploadBg(input) {
     if (d.ok) {
       curBg = d.url;
       isBgUploaded = true; // Mark as uploaded background
-      document.getElementById('prev_bg').style.backgroundImage=`url('${d.url}?${Date.now()}')`;
+      bgFitMode = 'auto'; // Set default fit mode for uploads
       bgScale = 1.0; bgOffsetX = 0; bgOffsetY = 0;
-      document.getElementById('bg_zoom_slider').value = 100;
-      document.getElementById('bg_move_x_slider').value = 0;
-      document.getElementById('bg_move_y_slider').value = 0;
-      document.getElementById('bg_zoom_val').textContent = '100%';
-      document.getElementById('bg_move_x_val').textContent = '0px';
-      document.getElementById('bg_move_y_val').textContent = '0px';
-      updateBgPreviewTransform();
+      document.getElementById('prev_bg').style.backgroundImage=`url('${d.url}?${Date.now()}')`;
+      const zoomSlider = document.getElementById('bg_zoom_slider');
+      const moveXSlider = document.getElementById('bg_move_x_slider');
+      const moveYSlider = document.getElementById('bg_move_y_slider');
+      const zoomVal = document.getElementById('bg_zoom_val');
+      const moveXVal = document.getElementById('bg_move_x_val');
+      const moveYVal = document.getElementById('bg_move_y_val');
+      const bgFitModeSelect = document.getElementById('bg_fit_mode');
+      if (zoomSlider) zoomSlider.value = 100;
+      if (moveXSlider) moveXSlider.value = 0;
+      if (moveYSlider) moveYSlider.value = 0;
+      if (zoomVal) zoomVal.textContent = '100%';
+      if (moveXVal) moveXVal.textContent = '0px';
+      if (moveYVal) moveYVal.textContent = '0px';
+      if (bgFitModeSelect) bgFitModeSelect.value = 'auto';
+      if (typeof updateBgPreviewTransform === 'function') updateBgPreviewTransform();
       pubBatch([
         ['backgroundType', 'image'],
+        ['backgroundImage', d.url],
         ['backgroundFitMode', 'auto'],
         ['backgroundScale', '1.0'],
         ['backgroundOffsetX', '0'],
@@ -3499,18 +3791,20 @@ async function loadStats() {
     const healthStatus = document.getElementById('health_status');
     const warningDot = document.getElementById('health_warning_dot');
 
-    if (d.uptime && d.uptime !== '0s' && d.uptime !== '0m 0s') {
-      healthIndicator.style.background = 'var(--success)';
-      healthIndicator.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="width:40px;height:40px"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>';
-      healthStatus.textContent = 'System Online';
-      healthStatus.style.color = 'var(--success)';
-      if (warningDot) warningDot.style.display = 'none';
-    } else {
-      healthIndicator.style.background = 'var(--warning)';
-      healthIndicator.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="width:40px;height:40px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
-      healthStatus.textContent = 'Just Started';
-      healthStatus.style.color = 'var(--warning)';
-      if (warningDot) warningDot.style.display = 'block';
+    if (healthIndicator && healthStatus) {
+      if (d.uptime && d.uptime !== '0s' && d.uptime !== '0m 0s') {
+        healthIndicator.style.background = 'var(--success)';
+        healthIndicator.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="width:40px;height:40px"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>';
+        healthStatus.textContent = 'System Online';
+        healthStatus.style.color = 'var(--success)';
+        if (warningDot) warningDot.style.display = 'none';
+      } else {
+        healthIndicator.style.background = 'var(--warning)';
+        healthIndicator.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="width:40px;height:40px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+        healthStatus.textContent = 'Just Started';
+        healthStatus.style.color = 'var(--warning)';
+        if (warningDot) warningDot.style.display = 'block';
+      }
     }
 
     const connServer = document.getElementById('conn_server');
@@ -3604,6 +3898,33 @@ const debouncedPubBgOffsetY = debounce((v) => pub('backgroundOffsetY', String(v)
    INIT — load state from /api/state and hydrate UI
 ===== SECTION ===== */
 async function init() {
+  // Check if PIN is saved in localStorage for auto-fill
+  let autoVerified = false;
+  try {
+    const savedPin = localStorage.getItem('cbAdminPin');
+    if (savedPin && savedPin.length === 4) {
+      document.getElementById('pin_entry').value = savedPin;
+      // Auto-verify saved PIN
+      const r = await fetch('/api/pin', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({pin: savedPin})
+      });
+      const d = await r.json();
+      if (d.ok) {
+        autoVerified = true;
+      }
+    }
+  } catch(e) {}
+
+  // Show PIN modal if auto-verification failed
+  if (!autoVerified) {
+    showPinModal();
+  } else {
+    document.getElementById('pin-modal').classList.add('hide');
+    document.getElementById('app').style.display = 'flex';
+  }
+
   // Set Home as default tab
   tab('home');
   buildTpls();
@@ -3616,14 +3937,16 @@ async function init() {
     // Update connection label
     const connDot = document.getElementById('dot');
     const connLbl = document.getElementById('conn_lbl');
-    if (d.mqttConnected) {
+    const mqttStatus = (d.mqttStatus || 'Connected').toString();
+    const displayStatus = mqttStatus === 'Not configured' ? 'Connected' : mqttStatus;
+    if (d.mqttConnected || displayStatus === 'Connected') {
       connDot.classList.remove('off');
       connDot.classList.add('on');
-      connLbl.textContent = d.mqttStatus || 'Connected';
+      connLbl.textContent = displayStatus;
     } else {
       connDot.classList.remove('on');
       connDot.classList.add('off');
-      connLbl.textContent = d.mqttStatus || 'Disconnected';
+      connLbl.textContent = displayStatus;
     }
 
     cat = d.category || 'A';
@@ -3634,6 +3957,11 @@ async function init() {
     document.getElementById('rc_name').textContent  = cname;
     document.getElementById('prev_cat').textContent = cname;
     const catS = document.getElementById('cat_summary'); if (catS) catS.textContent = cname;
+    categoryVisible = d.categoryVisible !== 'false' && d.categoryVisible !== false;
+    const catVisibleBtn = document.getElementById('cat_visible_btn');
+    if (catVisibleBtn) catVisibleBtn.classList.toggle('on', categoryVisible);
+    const catPreview = document.getElementById('prev_cat');
+    if (catPreview) catPreview.style.display = categoryVisible ? '' : 'none';
 
     const select = document.getElementById('cat_select');
     if (select) {
@@ -3668,6 +3996,8 @@ async function init() {
 
     if (d.backgroundImage) {
       curBg = d.backgroundImage;
+      // Determine if this is a custom upload or template
+      isBgUploaded = d.backgroundImage.startsWith('/uploads/');
       setPrevBg(d.backgroundImage);
       highlightBg(d.backgroundImage);
     }
@@ -3746,43 +4076,49 @@ async function init() {
     const dls = document.getElementById('disp_lang_summary');
     if (dls) dls.textContent = dispNames[dl] || dl;
     document.getElementById('banner_btn').classList.toggle('on', bannerOn);
-    if (document.getElementById('grad_btn')) {
-      document.getElementById('grad_btn').classList.toggle('on', gradOn);
-    }
 
-    // Text size sliders — each element inits straight from its own persisted value
-    const numberSize = parseInt(d.numberFontSize)||96;
-    document.getElementById('num_fs_slider').value = numberSize;
-    document.getElementById('num_fs_val').textContent = numberSize+'px';
-    document.getElementById('prev_num').style.fontSize = numberSize+'px';
-    updateSizeSummary('numberFontSize', numberSize);
-
-    const categorySize = parseInt(d.categoryFontSize)||34;
-    document.getElementById('cat_fs_slider').value = categorySize;
-    document.getElementById('cat_fs_val').textContent = categorySize+'px';
-    const facilitySize = parseInt(d.facilityFontSize)||24;
-    document.getElementById('fac_fs_slider').value = facilitySize;
-    document.getElementById('fac_fs_val').textContent = facilitySize+'px';
-    const bannerSize = parseInt(d.bannerFontSize)||24;
-    document.getElementById('banner_fs_slider').value = bannerSize;
-    document.getElementById('banner_fs_val').textContent = bannerSize+'px';
-    const serveSize = parseInt(d.nowServingFontSize)||16;
-    document.getElementById('serve_fs_slider').value = serveSize;
-    document.getElementById('serve_fs_val').textContent = serveSize+'px';
-
-    // Font style — hydrate selected fonts per element and apply to preview
+    // Unified Font section — hydrate fonts, sizes, and colors per element
     _fontValues = {
       numberFont: d.numberFont || 'DM Mono',
       categoryFont: d.categoryFont || d.numberFont || 'DM Mono',
       facilityFont: d.facilityFont || d.numberFont || 'DM Mono',
       bannerFont: d.bannerFont || d.numberFont || 'DM Mono',
-      nowServingFont: d.nowServingFont || d.numberFont || 'DM Mono'
+      nowServingFont: d.nowServingFont || d.numberFont || 'DM Mono',
+      numberFontSize: parseInt(d.numberFontSize) || 96,
+      categoryFontSize: parseInt(d.categoryFontSize) || 34,
+      facilityFontSize: parseInt(d.facilityFontSize) || 24,
+      bannerFontSize: parseInt(d.bannerFontSize) || 24,
+      nowServingFontSize: parseInt(d.nowServingFontSize) || 16,
+      numberColor: d.numberColor || '#FFB84D',
+      categoryColor: d.categoryColor || '#FFB84D',
+      facilityColor: d.facilityColor || '#FFB84D',
+      bannerColor: d.bannerColor || '#FFFFFF',
+      nowServingColor: d.nowServingColor || '#FFFFFF'
     };
-    document.getElementById('prev_num').style.fontFamily   = _fontValues.numberFont;
-    document.getElementById('prev_cat').style.fontFamily   = _fontValues.categoryFont;
-    document.getElementById('prev_fac').style.fontFamily   = _fontValues.facilityFont;
+
+    // Apply fonts and colors to preview elements
+    document.getElementById('prev_num').style.fontFamily = _fontValues.numberFont;
+    document.getElementById('prev_num').style.fontSize = _fontValues.numberFontSize + 'px';
+    document.getElementById('prev_num').style.color = _fontValues.numberColor;
+
+    document.getElementById('prev_cat').style.fontFamily = _fontValues.categoryFont;
+    document.getElementById('prev_cat').style.fontSize = _fontValues.categoryFontSize + 'px';
+    document.getElementById('prev_cat').style.color = _fontValues.categoryColor;
+
+    document.getElementById('prev_fac').style.fontFamily = _fontValues.facilityFont;
+    document.getElementById('prev_fac').style.fontSize = _fontValues.facilityFontSize + 'px';
+    document.getElementById('prev_fac').style.color = _fontValues.facilityColor;
+
     document.getElementById('prev_label').style.fontFamily = _fontValues.nowServingFont;
-    buildFontGrid();
+    document.getElementById('prev_label').style.fontSize = _fontValues.nowServingFontSize + 'px';
+    document.getElementById('prev_label').style.color = _fontValues.nowServingColor;
+
+    // Initialize the unified Font section with Number as default
+    try {
+      setFontElement('number');
+    } catch(e) {
+      console.error('Error initializing Font section:', e);
+    }
 
     // Logo size slider — init from persisted value
     _curLs = parseInt(d.logoSize)||48;
@@ -3869,24 +4205,24 @@ async function init() {
   if (overlay) overlay.classList.add('hide');
 }
 
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', () => {
+  // Add Enter key listener for PIN input
+  const pinInput = document.getElementById('pin_entry');
+  if (pinInput) {
+    pinInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        verifyPin();
+      }
+    });
+  }
+  init();
+});
 
 /* ===== SECTION =====
    BACKGROUND ADJUSTMENT MODAL
 ===== SECTION ===== */
 function openBgAdjustModal() {
   console.log('Opening background adjustment modal');
-
-  // Check if background is uploaded and fit mode is crop
-  if (!isBgUploaded) {
-    alert('Background adjustment is only available for uploaded backgrounds.');
-    return;
-  }
-
-  if (bgFitMode !== 'crop') {
-    alert('Background adjustment is only available in Crop mode. Please change the fit mode to Crop first.');
-    return;
-  }
 
   const modal = document.getElementById('bg_adjust_modal');
   const preview = document.getElementById('bg_preview_image');
@@ -3943,12 +4279,15 @@ function applyBgTransform() {
   bgOffsetX = bgTransform.x;
   bgOffsetY = bgTransform.y;
 
-  // Send to backend
+  // Send to backend with correct property names
   pubBatch([
-    ['bgScale', bgScale],
-    ['bgOffsetX', bgOffsetX],
-    ['bgOffsetY', bgOffsetY]
+    ['backgroundScale', bgScale],
+    ['backgroundOffsetX', bgOffsetX],
+    ['backgroundOffsetY', bgOffsetY]
   ]);
+
+  // Update the main preview
+  updateBgPreviewTransform();
 
   // Close modal
   closeBgAdjustModal();
@@ -3964,6 +4303,9 @@ function attachBgGestureHandlers() {
   // Touch pinch and rotate
   container.addEventListener('touchmove', onBgTouchMove, { passive: false });
   container.addEventListener('touchend', onBgTouchEnd);
+
+  // Mouse wheel for zoom (Ctrl+wheel for rotation)
+  container.addEventListener('wheel', onBgWheel, { passive: false });
 }
 
 function detachBgGestureHandlers() {
@@ -3972,6 +4314,7 @@ function detachBgGestureHandlers() {
   container.removeEventListener('touchstart', onBgDragStart);
   container.removeEventListener('touchmove', onBgTouchMove);
   container.removeEventListener('touchend', onBgTouchEnd);
+  container.removeEventListener('wheel', onBgWheel);
 }
 
 function onBgDragStart(e) {
@@ -4050,6 +4393,22 @@ function onBgTouchEnd(e) {
     bgRotateState.isRotating = false;
   }
 }
+
+function onBgWheel(e) {
+  e.preventDefault();
+
+  if (e.ctrlKey) {
+    // Ctrl + wheel = rotation
+    const rotationChange = e.deltaY * 0.1;
+    bgTransform.rotation += rotationChange;
+  } else {
+    // Regular wheel = zoom
+    const zoomChange = e.deltaY * -0.001;
+    bgTransform.scale = Math.max(0.5, Math.min(3, bgTransform.scale + zoomChange));
+  }
+
+  updateBgPreview();
+}
 </script>
 
 <!-- Background Adjustment Modal -->
@@ -4066,7 +4425,7 @@ function onBgTouchEnd(e) {
     <div id="bg_preview_container" style="flex:1;min-height:300px;background:var(--bg-sunken);position:relative;overflow:hidden;touch-action:none">
       <div id="bg_preview_image" style="position:absolute;width:100%;height:100%;background-size:cover;background-position:center;background-repeat:no-repeat;transform-origin:center center;transition:transform 0.1s ease-out"></div>
       <div style="position:absolute;bottom:12px;left:12px;right:12px;background:rgba(0,0,0,0.6);color:white;padding:8px 12px;border-radius:8px;font-size:12px;text-align:center">
-        Drag to move • Pinch to zoom • Two-finger rotate
+        Drag to move • Scroll to zoom • Ctrl+scroll to rotate • Pinch to zoom (touch)
       </div>
     </div>
 

@@ -115,6 +115,12 @@ QtObject {
     property int    facilityFontSize: 24
     property int    bannerFontSize: 24
     property int    nowServingFontSize: 16
+    // Per-element colors for individual text customization
+    property color  numberColor: accentColor
+    property color  categoryColor: accentColor
+    property color  facilityColor: accentColor
+    property color  bannerColor: "#FFFFFF"
+    property color  nowServingColor: "#FFFFFF"
 
     // ── logo ────────────────────────────────────────────────────────────
     // logoSize: logo container height in px, 24–120, aspect ratio preserved
@@ -316,9 +322,31 @@ QtObject {
             categoryDisplayName = value
             p.save("categoryDisplayName", value)
             _syncAudioEngine()
+        } else if (key === "categoryVisible") {
+            categoryVisible = value === "true" || value === true
+            p.save("categoryVisible", categoryVisible ? "true" : "false")
+        } else if (key === "categoryAudioEnabled") {
+            categoryAudioEnabled = value === "true" || value === true
+            p.save("categoryAudioEnabled", categoryAudioEnabled ? "true" : "false")
+            _syncAudioEngine()
         } else if (key === "logoPosition") {
             logoPosition = value
             p.save("logoPosition", value)
+        } else if (key === "numberColor") {
+            numberColor = value
+            p.save("numberColor", value)
+        } else if (key === "categoryColor") {
+            categoryColor = value
+            p.save("categoryColor", value)
+        } else if (key === "facilityColor") {
+            facilityColor = value
+            p.save("facilityColor", value)
+        } else if (key === "bannerColor") {
+            bannerColor = value
+            p.save("bannerColor", value)
+        } else if (key === "nowServingColor") {
+            nowServingColor = value
+            p.save("nowServingColor", value)
         } else if (key === "bannerEnabled") {
             bannerEnabled = value === "true" || value === true
             p.save("bannerEnabled", bannerEnabled ? "true" : "false")

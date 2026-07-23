@@ -6,6 +6,7 @@ import os
 import sys
 import threading
 import pathlib
+import shutil
 
 from PySide6.QtCore import QUrl, QFile, QStandardPaths
 from PySide6.QtGui import QGuiApplication, QFontDatabase
@@ -24,6 +25,18 @@ from app.imports import resource_rc as rc
 from src.logging import setup_logger, get_logger
 
 
+def _copy_tree_preserve_existing(src: pathlib.Path, dest: pathlib.Path) -> None:
+    dest.mkdir(parents=True, exist_ok=True)
+    for item in src.iterdir():
+        dest_item = dest / item.name
+        if item.is_dir():
+            if dest_item.exists() and not dest_item.is_dir():
+                dest_item.unlink()
+            _copy_tree_preserve_existing(item, dest_item)
+        else:
+            shutil.copy2(item, dest_item)
+
+
 def _copy_static_assets_to_data_dir(data_dir: str) -> None:
     logger = get_logger()
     pathlib.Path(data_dir).mkdir(parents=True, exist_ok=True)
@@ -39,42 +52,24 @@ def _copy_static_assets_to_data_dir(data_dir: str) -> None:
                     f.write(qf.readAll().data())
                 qf.close()
                 logger.debug(f"Seeded {filename} → {dest}")
-    # Copy pre-generated audio from resources to data directory
+
     project_root = pathlib.Path(__file__).parent
     resources_audio = project_root / "resources" / "audio"
     data_audio = pathlib.Path(data_dir) / "audio"
     if resources_audio.exists():
         data_audio.mkdir(parents=True, exist_ok=True)
-        import shutil
         for item in resources_audio.iterdir():
             dest_item = data_audio / item.name
             if item.is_dir():
-                if item.name in ("en", "fr", "ar"):
-                    # For language directories: only copy numbers/ subdir, preserve category/
-                    dest_item.mkdir(parents=True, exist_ok=True)
-                    src_numbers = item / "numbers"
-                    dest_numbers = dest_item / "numbers"
-                    if src_numbers.exists():
-                        if dest_numbers.exists():
-                            shutil.rmtree(dest_numbers)
-                        shutil.copytree(src_numbers, dest_numbers)
-                        logger.debug(f"Seeded numbers folder: {src_numbers} → {dest_numbers}")
-                else:
-                    # For other directories, copy only if not exists
-                    if not dest_item.exists():
-                        shutil.copytree(item, dest_item)
-                        logger.debug(f"Seeded audio folder: {item.name} → {dest_item}")
+                _copy_tree_preserve_existing(item, dest_item)
+                logger.debug(f"Seeded audio folder: {item.name} → {dest_item}")
             else:
-                # Copy files only if not exists
-                if not dest_item.exists():
-                    shutil.copy2(item, dest_item)
+                shutil.copy2(item, dest_item)
 
-    # Copy custom chime sound effect from project root to audio data directory
     chime_src = project_root / "Announcement sound effect - Sound Effects (128k).mp3"
     chime_dest = data_audio / "announcement_chime.mp3"
     if chime_src.exists():
         data_audio.mkdir(parents=True, exist_ok=True)
-        import shutil
         shutil.copy2(chime_src, chime_dest)
         logger.debug(f"Seeded announcement chime: {chime_src} → {chime_dest}")
 
@@ -113,12 +108,15 @@ def main():
 
     # Load custom fonts
     font_ids = []
+    project_root = pathlib.Path(__file__).resolve().parent
     fonts = [
         ":/app/res/font/Barriecito-Regular.ttf",
         ":/app/res/font/DTGetaiGroteskDisplay-Black.otf",
         ":/app/res/font/Gluten-Regular.ttf",
         ":/app/res/font/LCMogi-A.otf",
-        ":/app/res/font/Manosque-Regular.otf"
+        ":/app/res/font/Manosque-Regular.otf",
+        str(project_root / "FunPlayArabic_DEMO-Bold.otf"),
+        str(project_root / "TintaArabic-Bold.otf"),
     ]
     for font_path in fonts:
         fid = QFontDatabase.addApplicationFont(font_path)

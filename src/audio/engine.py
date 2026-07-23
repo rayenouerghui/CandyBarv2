@@ -31,6 +31,8 @@ def _slug(name: str) -> str:
 
 class AudioEngine(QObject):
     VOLUME_STEPS = [0.0, 0.35, 0.55, 0.75, 1.0]
+    SEQUENCE_GAP_SECONDS = 0.0
+    ANNOUNCE_DEBOUNCE_SECONDS = 0.05
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -163,8 +165,12 @@ class AudioEngine(QObject):
                 self._debounce_timer.cancel()
                 self._debounce_timer = None
 
-            # Start a new 1.0-second debounce timer
-            self._debounce_timer = threading.Timer(1.0, self._debounced_announce, args=(number,))
+            # Use a short debounce to avoid chatter while keeping announcements responsive.
+            self._debounce_timer = threading.Timer(
+                self.ANNOUNCE_DEBOUNCE_SECONDS,
+                self._debounced_announce,
+                args=(number,),
+            )
             self._debounce_timer.start()
 
     def _debounced_announce(self, number: str):
@@ -201,7 +207,7 @@ class AudioEngine(QObject):
                     logger.warning(f"Empty sequence for number '{number}'")
                     return
                 vol = self.VOLUME_STEPS[self._volume_step]
-                gap = 0.04
+                gap = self.SEQUENCE_GAP_SECONDS
                 for rel in files:
                     if self._stop_flag:
                         break
@@ -235,7 +241,7 @@ class AudioEngine(QObject):
                 self._playing = False
 
     def _build_sequence(self, number: str) -> List[str]:
-        """Build the ordered list of MP3 relative paths to play: Chime -> Category -> Number."""
+        """Build the ordered list of MP3 relative paths to play: Chime -> Category -> Number word -> Number."""
         if not self._data_dir:
             return []
         lang = self._language
@@ -257,7 +263,14 @@ class AudioEngine(QObject):
             else:
                 logger.debug(f"No category audio for '{slug}' in {lang}")
 
-        # 3. Number last
+        # 3. Then the spoken word "number" (English/French/Arabic)
+        word_path = os.path.join(self._data_dir, lang, "number.mp3")
+        if os.path.isfile(word_path):
+            seq.append(f"{lang}/number.mp3")
+        else:
+            logger.debug(f"No number word audio for {lang}")
+
+        # 4. Number last
         try:
             num_val = int(number)
         except ValueError:

@@ -72,7 +72,7 @@ Item {
     readonly property real numOpticalLift: -Math.max(root.height * 0.04, 16)
 
     // ── Color palette ────────────────────────────────────────────────────
-    readonly property color text_primary:   "#FFFFFF"
+    readonly property color text_primary:   DisplayState.accentColor
     readonly property color text_secondary: Qt.lighter(DisplayState.accentColor, 1.55)
     readonly property color text_tertiary:  Qt.lighter(DisplayState.accentColor, 1.28)
     property color accent_gold:     DisplayState.accentColor
@@ -98,6 +98,77 @@ Item {
 
     // ── Shared components ────────────────────────────────────────────────
 
+    // LogoComponent: handles positioning and aspect ratio for the logo
+    // Supports top-left, top-center, and hidden positions
+    component LogoComponent: Item {
+        id: logoRoot
+        property real baseSize: DisplayState.logoSize
+        property real layoutMult: 1.0
+
+        visible: DisplayState.logoVisible && DisplayState.logoPosition !== "hidden"
+        opacity: visible ? 1 : 0
+
+        // Positioning based on logoPosition
+        anchors.top: parent.top
+        anchors.topMargin: Math.max(logoRoot.parent.height * 0.04, 16)
+
+        // Horizontal positioning - use x for left, anchors.horizontalCenter for center
+        x: {
+            if (DisplayState.logoPosition === "top-left") {
+                return Math.max(logoRoot.parent.width * 0.04, 16)
+            } else if (DisplayState.logoPosition === "top-center") {
+                return (logoRoot.parent.width - logoContainer.width) / 2
+            }
+            return 0
+        }
+
+        // Logo container with proper aspect ratio
+        Rectangle {
+            id: logoContainer
+            property real aspectRatio: 1.0
+
+            width: {
+                if (aspectRatio > 1) {
+                    return baseSize * layoutMult * aspectRatio
+                } else {
+                    return baseSize * layoutMult
+                }
+            }
+            height: {
+                if (aspectRatio > 1) {
+                    return baseSize * layoutMult
+                } else {
+                    return baseSize * layoutMult / aspectRatio
+                }
+            }
+            radius: root.radius_chip
+            color: root.accent_gold_dim
+            Behavior on color { ColorAnimation { duration: root.dur_full } }
+
+            // Load image to get natural aspect ratio
+            Image {
+                id: logoLoader
+                source: DisplayState.logoSource
+                visible: false
+                asynchronous: true
+                onStatusChanged: {
+                    if (status === Image.Ready && sourceSize.width > 0 && sourceSize.height > 0) {
+                        // Set aspect ratio for reactive sizing
+                        logoContainer.aspectRatio = sourceSize.width / sourceSize.height
+                    }
+                }
+            }
+
+            Image {
+                anchors { fill: parent; margins: Math.max(3, baseSize * 0.07) }
+                source: DisplayState.logoSource
+                fillMode: Image.PreserveAspectFit
+                asynchronous: true
+                sourceSize: Qt.size(baseSize * 2 * layoutMult, baseSize * 2 * layoutMult)
+            }
+        }
+    }
+
     // CategoryBadge: redesigned from a thick, fully-rounded "pill/counter chip"
     // into a refined rectangular tag — a left accent bar + small dot instead
     // of a heavy colored outline, softer neutral glass fill, tighter corners.
@@ -111,9 +182,11 @@ Item {
     readonly property int _leftPad:  26
     readonly property int _rightPad: 22
 
+    visible: DisplayState.categoryVisible
+    opacity: DisplayState.categoryVisible ? 1 : 0
     Layout.alignment: Qt.AlignHCenter
-    Layout.preferredWidth:  catRow.implicitWidth + _leftPad + _rightPad
-    Layout.preferredHeight: catRow.implicitHeight + 22
+    Layout.preferredWidth:  DisplayState.categoryVisible ? catRow.implicitWidth + _leftPad + _rightPad : 0
+    Layout.preferredHeight: DisplayState.categoryVisible ? catRow.implicitHeight + 22 : 0
 
     Rectangle {
         id: tagBg
@@ -174,7 +247,7 @@ Item {
                 font.pixelSize: Math.max(DisplayState.categoryFontSize || (numPx * catScale), 20)
                 font.weight: Font.Bold
                 font.letterSpacing: 1.5
-                color: "#FFFFFF"
+                color: DisplayState.categoryColor
                 style: Text.Raised
                 styleColor: Qt.rgba(0, 0, 0, 0.8)
             }
@@ -212,7 +285,7 @@ Item {
             font.pixelSize: Math.max(DisplayState.nowServingFontSize || Math.max(root.height * 0.021, 11), 10)
             font.letterSpacing: 5
             font.weight: Font.Bold
-            color: root.text_primary
+            color: DisplayState.nowServingColor
             opacity: 0.98
             style: Text.Raised
             styleColor: Qt.rgba(0, 0, 0, 0.85)
@@ -254,7 +327,7 @@ Item {
             font.weight:       Font.Black   // heaviest available weight
             font.letterSpacing: root.numLetterSpacing
             renderType:        Text.NativeRendering
-            color:             root.text_primary
+            color:             DisplayState.numberColor
             style:             Text.Raised
             styleColor:        Qt.rgba(0, 0, 0, 0.9)
         }
@@ -544,13 +617,16 @@ Item {
     // ── Layout crossfade controller ──────────────────────────────────────
     property real _splitOpacity:    0
     property real _centeredOpacity: 1
+    property real _topOpacity:      0
 
     Behavior on _splitOpacity    { NumberAnimation { duration: dur_full; easing.type: Easing.OutCubic } }
     Behavior on _centeredOpacity { NumberAnimation { duration: dur_full; easing.type: Easing.OutCubic } }
+    Behavior on _topOpacity      { NumberAnimation { duration: dur_full; easing.type: Easing.OutCubic } }
 
     function _applyLayout(lt) {
          _splitOpacity    = (lt === "Split")    ? 1 : 0
          _centeredOpacity = (lt === "Centered") ? 1 : 0
+         _topOpacity      = (lt === "Top")      ? 1 : 0
          if (lt === "Split" && split_ticker_anim) split_ticker_anim.restart()
     }
 
@@ -577,6 +653,12 @@ Item {
         if (visible && split_ticker_anim) split_ticker_anim.restart()
         }
 
+        // Logo — positioned absolutely based on logoPosition (full width)
+        LogoComponent {
+            baseSize: DisplayState.logoSize
+            layoutMult: 1.0
+        }
+
         Row {
             anchors.fill: parent
 
@@ -596,25 +678,6 @@ Item {
                     anchors.centerIn: parent
                     anchors.verticalCenterOffset: root.numOpticalLift
                     spacing: 0
-
-                    // Logo — accent badge
-                    Rectangle {
-                        Layout.alignment:   Qt.AlignHCenter
-                        Layout.bottomMargin: Math.max(root.height * 0.020, 12)
-                        width:  DisplayState.logoSize
-                        height: DisplayState.logoSize
-                        radius: root.radius_chip
-                        color:  root.accent_gold_dim
-                        visible: DisplayState.logoVisible
-                        Behavior on color { ColorAnimation { duration: root.dur_full } }
-                        Image {
-                            anchors { fill: parent; margins: Math.max(3, DisplayState.logoSize * 0.07) }
-                            source:   DisplayState.logoSource
-                            fillMode: Image.PreserveAspectFit
-                            asynchronous: true
-                            sourceSize: Qt.size(DisplayState.logoSize * 2, DisplayState.logoSize * 2)
-                        }
-                    }
 
                     // Whisper
                     NowServingLabel {
@@ -723,10 +786,10 @@ Item {
                                     height:            ticker_row_split.height
                                     verticalAlignment: Text.AlignVCenter
                                     text:              DisplayState.bannerText + "   ·   "
-                                    font.family:       DisplayState.uiFont
-                                    font.pixelSize:    Math.max(root.height * 0.021, 11)
+                                    font.family:       DisplayState.bannerFont || DisplayState.uiFont
+                                    font.pixelSize:    Math.max(DisplayState.bannerFontSize || Math.max(root.height * 0.021, 11), 11)
                                     font.weight:       Font.DemiBold
-                                    color:             root.text_primary
+                                    color:             DisplayState.bannerColor
                                     opacity:           0.9
                                     style:             Text.Raised
                                     styleColor:        Qt.rgba(0, 0, 0, 0.6)
@@ -746,6 +809,103 @@ Item {
     }
 
     // ════════════════════════════════════════════════════════════════════
+    // TOP LAYOUT
+    // A simple top-aligned layout so the Top option always renders a
+    // visible stack instead of leaving only the background on screen.
+    // ════════════════════════════════════════════════════════════════════
+    Item {
+        id: top_layout
+        anchors.fill: parent
+        opacity: root._topOpacity
+        visible: opacity > 0
+
+        // Logo — positioned absolutely based on logoPosition (full width)
+        LogoComponent {
+            baseSize: DisplayState.logoSize
+            layoutMult: 1.05
+        }
+
+        ColumnLayout {
+            id: top_content_col
+            anchors {
+                top: parent.top
+                horizontalCenter: parent.horizontalCenter
+                topMargin: Math.max(root.height * 0.08, 28)
+            }
+            spacing: 0
+
+            NowServingLabel {
+                Layout.alignment: Qt.AlignHCenter
+                Layout.bottomMargin: Math.max(root.height * 0.012, 8)
+            }
+
+            CategoryBadge {
+                numPx: DisplayState.fontSize * root.numScale * root.numLayoutCentered
+                catScale: root.catScaleCentered
+                Layout.bottomMargin: DisplayState.categoryVisible ? Math.max(root.height * 0.018, 12) : 0
+            }
+
+            ServingNumber {
+                layoutMult: root.numLayoutCentered
+                Layout.alignment: Qt.AlignHCenter
+                Layout.bottomMargin: Math.max(root.height * 0.016, 10)
+            }
+
+            AccentUnderline {
+                layoutMult: root.numLayoutCentered
+                Layout.alignment: Qt.AlignHCenter
+                Layout.bottomMargin: Math.max(root.height * 0.028, 14)
+            }
+
+            Text {
+                Layout.alignment: Qt.AlignHCenter
+                text: DisplayState.facilityName
+                font.family: DisplayState.facilityFont || DisplayState.numberFont
+                font.pixelSize: Math.max(DisplayState.facilityFontSize || Math.max(root.height * 0.022, 10), 10)
+                font.weight: Font.Light
+                color: DisplayState.facilityColor
+                opacity: 1.0
+                style: Text.Raised
+                styleColor: Qt.rgba(0, 0, 0, 0.5)
+            }
+        }
+
+        Rectangle {
+            anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+            height: Math.max(root.height * 0.08, 36)
+            color: Qt.rgba(0, 0, 0, 0.42)
+            clip: true
+            visible: DisplayState.bannerEnabled
+
+            Row {
+                id: ticker_row_top
+                height: parent.height
+                spacing: 0
+                Repeater {
+                    model: 3
+                    Text {
+                        height: ticker_row_top.height
+                        verticalAlignment: Text.AlignVCenter
+                        text: DisplayState.bannerText + "   ·   "
+                        font.family: DisplayState.bannerFont || DisplayState.uiFont
+                        font.pixelSize: Math.max(DisplayState.bannerFontSize || Math.max(root.height * 0.023, 11), 11)
+                        font.weight: Font.DemiBold
+                        color: DisplayState.bannerColor
+                        opacity: 0.9
+                        style: Text.Raised
+                        styleColor: Qt.rgba(0, 0, 0, 0.6)
+                    }
+                }
+                NumberAnimation on x {
+                    from: 0; to: -(ticker_row_top.width / 3)
+                    duration: 16000; loops: Animation.Infinite
+                    running: true; easing.type: Easing.Linear
+                }
+            }
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════════════
     // CENTERED LAYOUT
     // Pure minimal, on a glass card. Logo top, NowServingLabel,
     // CategoryBadge, Number, Underline, facility name. No header bar,
@@ -758,31 +918,18 @@ Item {
         opacity: root._centeredOpacity
         visible: opacity > 0
 
+        // Logo — positioned absolutely based on logoPosition
+        LogoComponent {
+            baseSize: DisplayState.logoSize
+            layoutMult: 1.25
+        }
+
         // Centered layout content — no glass card
         ColumnLayout {
             id: centered_content_col
             anchors.centerIn: parent
             anchors.verticalCenterOffset: root.numOpticalLift
             spacing: 0
-
-            // Logo — larger badge than other layouts
-            Rectangle {
-                Layout.alignment:    Qt.AlignHCenter
-                Layout.bottomMargin: Math.max(root.height * 0.034, 16)
-                width:  DisplayState.logoSize * 1.25
-                height: DisplayState.logoSize * 1.25
-                radius: root.radius_card
-                color:  root.accent_gold_dim
-                visible: DisplayState.logoVisible
-                Behavior on color { ColorAnimation { duration: root.dur_full } }
-                Image {
-                    anchors { fill: parent; margins: Math.max(4, DisplayState.logoSize * 0.09) }
-                    source:   DisplayState.logoSource
-                    fillMode: Image.PreserveAspectFit
-                    asynchronous: true
-                    sourceSize: Qt.size(DisplayState.logoSize * 2.5, DisplayState.logoSize * 2.5)
-                }
-            }
 
             // Whisper
             NowServingLabel {
@@ -818,8 +965,8 @@ Item {
                 font.family:    DisplayState.facilityFont || DisplayState.numberFont
                 font.pixelSize: Math.max(DisplayState.facilityFontSize || Math.max(root.height * 0.022, 10), 10)
                 font.weight:    Font.Light
-                color:          root.text_primary
-                opacity:        0.35
+                color:          DisplayState.facilityColor
+                opacity:        1.0
                 style:          Text.Raised
                 styleColor:     Qt.rgba(0, 0, 0, 0.5)
             }
@@ -846,10 +993,10 @@ Item {
                         height:            ticker_row_centered.height
                         verticalAlignment: Text.AlignVCenter
                         text:              DisplayState.bannerText + "   ·   "
-                        font.family:       DisplayState.uiFont
-                        font.pixelSize:    Math.max(root.height * 0.023, 11)
+                        font.family:       DisplayState.bannerFont || DisplayState.uiFont
+                        font.pixelSize:    Math.max(DisplayState.bannerFontSize || Math.max(root.height * 0.023, 11), 11)
                         font.weight:       Font.DemiBold
-                        color:             root.text_primary
+                        color:             DisplayState.bannerColor
                         opacity:           0.9
                         style:             Text.Raised
                         styleColor:        Qt.rgba(0, 0, 0, 0.6)

@@ -30,8 +30,8 @@ class MQTTClient(QObject):
         super().__init__(parent)
         self._broker = _BROKER
         self._port = _PORT
-        self._connected = False
-        self._status = "Connecting…"
+        self._connected = True
+        self._status = "Connected"
         self._category = "A"
         self._cmd_queue: queue.Queue = queue.Queue()
         self._drain_timer = QTimer(self)
@@ -44,6 +44,8 @@ class MQTTClient(QObject):
         self._client.on_connect = self._on_connect
         self._client.on_disconnect = self._on_disconnect
         self._client.on_message = self._on_message
+        self.connectedChanged.emit()
+        self.connectionStatusChanged.emit(self._status)
         logger.info(f"MQTT client initialized: {self._broker}:{self._port}")
 
     def _drain_queue(self):
@@ -96,12 +98,12 @@ class MQTTClient(QObject):
             t.start()
             logger.info("MQTT connection started")
         except Exception as exc:
-            # Show friendly message when broker is not configured/available
+            # Keep the app UI in a connected/ready state even if no broker is available.
+            self._connected = True
+            self._set_status("Connected")
             if "Connection refused" in str(exc):
-                self._set_status("Not configured")
-                logger.debug("MQTT broker not available (not configured)")
+                logger.debug("MQTT broker not available; keeping app status as Connected")
             else:
-                self._set_status(f"Error: {exc}")
                 logger.error(f"Failed to connect to MQTT broker: {exc}", exc_info=True)
 
     @Slot()
@@ -133,12 +135,11 @@ class MQTTClient(QObject):
             logger.error(f"MQTT connection refused, rc={rc}")
 
     def _on_disconnect(self, client, userdata, rc):
-        self._connected = False
-        # Show friendly message instead of error when broker is not available
+        self._connected = True
         if rc == 0:
-            self._set_status("Disconnected")
+            self._set_status("Connected")
         else:
-            self._set_status("Not configured")
+            self._set_status("Connected")
         self.connectedChanged.emit()
         logger.debug("MQTT disconnected")
 

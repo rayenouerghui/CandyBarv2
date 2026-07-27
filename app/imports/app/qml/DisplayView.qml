@@ -56,6 +56,7 @@ Item {
     // Per-layout number multipliers — Centered gets the most room
     readonly property real numLayoutSplit:    1.10
     readonly property real numLayoutCentered: 1.30
+    readonly property real numLayoutTop: 1.45
 
     // DESIGN CHANGE: category is now sized as a larger fraction of the number
     // (0.32–0.38 instead of the old 0.24–0.28) so it reads clearly as its
@@ -64,6 +65,7 @@ Item {
     // competing visually with the number.
     readonly property real catScaleSplit:    0.32
     readonly property real catScaleCentered: 0.38
+    readonly property real catScaleTop:  0.26 
 
     // Tight tracking — binds digits into one readable unit at distance
     readonly property int numLetterSpacing: -3
@@ -627,7 +629,9 @@ Item {
          _splitOpacity    = (lt === "Split")    ? 1 : 0
          _centeredOpacity = (lt === "Centered") ? 1 : 0
          _topOpacity      = (lt === "Top")      ? 1 : 0
-         if (lt === "Split" && split_ticker_anim) split_ticker_anim.restart()
+         if (lt === "Split"    && split_ticker_anim)    split_ticker_anim.restart()
+         if (lt === "Top"      && top_ticker_anim)      top_ticker_anim.restart()
+         if (lt === "Centered" && centered_ticker_anim) centered_ticker_anim.restart()
     }
 
     Connections {
@@ -703,6 +707,20 @@ Item {
                     AccentUnderline {
                         layoutMult: root.numLayoutSplit
                         Layout.alignment: Qt.AlignHCenter
+                        Layout.bottomMargin: Math.max(root.height * 0.016, 10)
+                    }
+
+                    // Facility name
+                    Text {
+                        Layout.alignment: Qt.AlignHCenter
+                        text: DisplayState.facilityName
+                        font.family: DisplayState.facilityFont || DisplayState.numberFont
+                        font.pixelSize: Math.max(DisplayState.facilityFontSize || Math.max(root.height * 0.022, 10), 10)
+                        font.weight: Font.Light
+                        color: DisplayState.facilityColor
+                        opacity: 1.0
+                        style: Text.Raised
+                        styleColor: Qt.rgba(0, 0, 0, 0.5)
                     }
                 }
             }
@@ -714,17 +732,17 @@ Item {
 
                 ColumnLayout {
                     anchors { fill: parent; margins: 28; topMargin: 44 }
-                    spacing: 0
+                    spacing: 20
 
                     // "NEXT UP" — clearly secondary, small and dim
                     Text {
                         text:           DisplayState.tr("next_up")
                         font.family:    DisplayState.uiFont
-                        font.pixelSize: Math.max(root.height * 0.024, 12)
+                        font.pixelSize: Math.max(root.height * 0.048, 24)
                         font.letterSpacing: 5
                         font.weight:    Font.Bold
                         color:          root.text_secondary
-                        opacity:        0.6
+                        opacity:        0.85
                         Layout.bottomMargin: 20
                         style:          Text.Raised
                         styleColor:     Qt.rgba(0, 0, 0, 0.5)
@@ -743,16 +761,17 @@ Item {
 
                         delegate: Item {
                             Layout.fillWidth: true
-                            height: Math.max(root.height * 0.075, 45)
+                            height: nextNumText.implicitHeight + 32
 
                             Text {
+                                id: nextNumText
                                 anchors {
                                     left: parent.left; leftMargin: 12
                                     verticalCenter: parent.verticalCenter
                                 }
                                 text:           modelData
                                 font.family:    DisplayState.numberFont
-                                font.pixelSize: Math.max(root.height * 0.055, 24)
+                                font.pixelSize: Math.max(root.height * 0.12, 60)
                                 font.weight:    Font.Bold
                                 color:          root.text_primary
                                 opacity:        0.85 - index * 0.15
@@ -775,11 +794,12 @@ Item {
                         radius: root.radius_chip
                         color: Qt.rgba(0, 0, 0, 0.42)
                         clip: true
+                        onWidthChanged: if (split_ticker_anim) split_ticker_anim.restart()
 
                         Row {
                             id: ticker_row_split
                             height: parent.height
-                            spacing: 0
+                            spacing: 14
                             Repeater {
                                 model: 3
                                 Text {
@@ -813,97 +833,121 @@ Item {
     // A simple top-aligned layout so the Top option always renders a
     // visible stack instead of leaving only the background on screen.
     // ════════════════════════════════════════════════════════════════════
-    Item {
-        id: top_layout
-        anchors.fill: parent
-        opacity: root._topOpacity
-        visible: opacity > 0
+   Item {
+    id: top_layout
+    anchors.fill: parent
+    opacity: root._topOpacity
+    visible: opacity > 0
+    onVisibleChanged: {
+        if (visible && top_ticker_anim) top_ticker_anim.restart()
+    }
 
-        // Logo — positioned absolutely based on logoPosition (full width)
-        LogoComponent {
-            baseSize: DisplayState.logoSize
-            layoutMult: 1.05
+    LogoComponent {
+        baseSize: DisplayState.logoSize
+        layoutMult: 0.9
+    }
+
+    // ── Header strip — label + category side-by-side, NOT stacked ──────
+    // This is what makes Top structurally different from Centered: instead
+    // of a vertical stack, the secondary info is compressed into one slim
+    // horizontal row, freeing almost the whole screen for the number.
+    RowLayout {
+        id: top_header_row
+        anchors {
+            top: parent.top
+            horizontalCenter: parent.horizontalCenter
+            topMargin: Math.max(root.height * 0.05, 20)
+        }
+        spacing: Math.max(root.width * 0.03, 20)
+
+        NowServingLabel {}
+
+        CategoryBadge {
+            numPx: DisplayState.fontSize * root.numScale * root.numLayoutTop
+            catScale: root.catScaleTop
+        }
+    }
+
+    // ── Hero number — fills essentially the whole remaining screen ─────
+    Item {
+        id: top_hero_area
+        anchors {
+            top: top_header_row.bottom
+            left: parent.left
+            right: parent.right
+            bottom: top_facility_text.top
         }
 
         ColumnLayout {
-            id: top_content_col
-            anchors {
-                top: parent.top
-                horizontalCenter: parent.horizontalCenter
-                topMargin: Math.max(root.height * 0.08, 28)
-            }
+            anchors.centerIn: parent
             spacing: 0
 
-            NowServingLabel {
-                Layout.alignment: Qt.AlignHCenter
-                Layout.bottomMargin: Math.max(root.height * 0.012, 8)
-            }
-
-            CategoryBadge {
-                numPx: DisplayState.fontSize * root.numScale * root.numLayoutCentered
-                catScale: root.catScaleCentered
-                Layout.bottomMargin: DisplayState.categoryVisible ? Math.max(root.height * 0.018, 12) : 0
-            }
-
             ServingNumber {
-                layoutMult: root.numLayoutCentered
+                layoutMult: root.numLayoutTop
                 Layout.alignment: Qt.AlignHCenter
-                Layout.bottomMargin: Math.max(root.height * 0.016, 10)
+                Layout.bottomMargin: Math.max(root.height * 0.02, 12)
             }
 
             AccentUnderline {
-                layoutMult: root.numLayoutCentered
+                layoutMult: root.numLayoutTop
                 Layout.alignment: Qt.AlignHCenter
-                Layout.bottomMargin: Math.max(root.height * 0.028, 14)
-            }
-
-            Text {
-                Layout.alignment: Qt.AlignHCenter
-                text: DisplayState.facilityName
-                font.family: DisplayState.facilityFont || DisplayState.numberFont
-                font.pixelSize: Math.max(DisplayState.facilityFontSize || Math.max(root.height * 0.022, 10), 10)
-                font.weight: Font.Light
-                color: DisplayState.facilityColor
-                opacity: 1.0
-                style: Text.Raised
-                styleColor: Qt.rgba(0, 0, 0, 0.5)
-            }
-        }
-
-        Rectangle {
-            anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-            height: Math.max(root.height * 0.08, 36)
-            color: Qt.rgba(0, 0, 0, 0.42)
-            clip: true
-            visible: DisplayState.bannerEnabled
-
-            Row {
-                id: ticker_row_top
-                height: parent.height
-                spacing: 0
-                Repeater {
-                    model: 3
-                    Text {
-                        height: ticker_row_top.height
-                        verticalAlignment: Text.AlignVCenter
-                        text: DisplayState.bannerText + "   ·   "
-                        font.family: DisplayState.bannerFont || DisplayState.uiFont
-                        font.pixelSize: Math.max(DisplayState.bannerFontSize || Math.max(root.height * 0.023, 11), 11)
-                        font.weight: Font.DemiBold
-                        color: DisplayState.bannerColor
-                        opacity: 0.9
-                        style: Text.Raised
-                        styleColor: Qt.rgba(0, 0, 0, 0.6)
-                    }
-                }
-                NumberAnimation on x {
-                    from: 0; to: -(ticker_row_top.width / 3)
-                    duration: 16000; loops: Animation.Infinite
-                    running: true; easing.type: Easing.Linear
-                }
             }
         }
     }
+
+    Text {
+        id: top_facility_text
+        anchors {
+            bottom: top_banner.top
+            horizontalCenter: parent.horizontalCenter
+            bottomMargin: Math.max(root.height * 0.014, 8)
+        }
+        text: DisplayState.facilityName
+        font.family: DisplayState.facilityFont || DisplayState.numberFont
+        font.pixelSize: Math.max(DisplayState.facilityFontSize || Math.max(root.height * 0.022, 10), 10)
+        font.weight: Font.Light
+        color: DisplayState.facilityColor
+        style: Text.Raised
+        styleColor: Qt.rgba(0, 0, 0, 0.5)
+    }
+
+    Rectangle {
+        id: top_banner
+        anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+        height: Math.max(root.height * 0.08, 36)
+        color: Qt.rgba(0, 0, 0, 0.42)
+        clip: true
+        visible: DisplayState.bannerEnabled
+        onWidthChanged: if (top_ticker_anim) top_ticker_anim.restart()
+
+        Row {
+            id: ticker_row_top
+            height: parent.height
+            spacing: 0
+            Repeater {
+                model: 3
+                Text {
+                    height: ticker_row_top.height
+                    verticalAlignment: Text.AlignVCenter
+                    text: DisplayState.bannerText + "   ·   "
+                    font.family: DisplayState.bannerFont || DisplayState.uiFont
+                    font.pixelSize: Math.max(DisplayState.bannerFontSize || Math.max(root.height * 0.023, 11), 11)
+                    font.weight: Font.DemiBold
+                    color: DisplayState.bannerColor
+                    opacity: 0.9
+                    style: Text.Raised
+                    styleColor: Qt.rgba(0, 0, 0, 0.6)
+                }
+            }
+            NumberAnimation on x {
+                id: top_ticker_anim
+                from: 0; to: -(ticker_row_top.width / 3)
+                duration: 16000; loops: Animation.Infinite
+                running: true; easing.type: Easing.Linear
+            }
+        }
+    }
+}
 
     // ════════════════════════════════════════════════════════════════════
     // CENTERED LAYOUT
@@ -917,6 +961,9 @@ Item {
         anchors.fill: parent
         opacity: root._centeredOpacity
         visible: opacity > 0
+        onVisibleChanged: {
+            if (visible && centered_ticker_anim) centered_ticker_anim.restart()
+        }
 
         // Logo — positioned absolutely based on logoPosition
         LogoComponent {
@@ -982,6 +1029,7 @@ Item {
             color: Qt.rgba(0, 0, 0, 0.42)
             clip: true
             visible: DisplayState.bannerEnabled
+            onWidthChanged: if (centered_ticker_anim) centered_ticker_anim.restart()
 
             Row {
                 id: ticker_row_centered
@@ -1003,6 +1051,7 @@ Item {
                     }
                 }
                 NumberAnimation on x {
+                    id: centered_ticker_anim
                     from: 0; to: -(ticker_row_centered.width / 3)
                     duration: 16000; loops: Animation.Infinite
                     running: true; easing.type: Easing.Linear

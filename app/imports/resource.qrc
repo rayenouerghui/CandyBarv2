@@ -21,15 +21,8 @@
         <!-- Backgrounds — Professional -->
         <file>app/res/image/pro_abstract.jpg</file>
         <file>app/res/image/pro_geometric.jpg</file>
-        <file>app/res/image/pro_orange_gradient.jpg</file>
-        <file>app/res/image/pro_purple_waves.jpg</file>
-        <file>app/res/image/pro_blue_gradient.jpg</file>
-        <file>app/res/image/pro_pink_gradient.jpg</file>
 
         <!-- Backgrounds — Fast Food -->
-        <file>app/res/image/ff_red_checker.jpg</file>
-        <file>app/res/image/ff_orange_organic.jpg</file>
-        <file>app/res/image/ff_green_leaves.jpg</file>
         <file>app/res/image/ff_red_waves.jpg</file>
         <file>app/res/image/ff_burger_pattern.jpg</file>
 

@@ -2,7 +2,7 @@
 
 A self-contained kiosk queue-number display system with web-based admin panel.
 
-![Data Flow Diagram](Dataflow Diagram.png)
+![Data Flow Diagram](./Dataflow%20Diagram.png)
 
 ## Features
 

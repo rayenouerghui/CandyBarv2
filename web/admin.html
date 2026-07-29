@@ -876,6 +876,30 @@
       box-shadow:0 0 0 3px var(--primary-glow),var(--shadow-md);
       transform:translateY(-1px);
     }
+    .tpl-card-disabled {
+      pointer-events: none;
+      opacity: 0.55;
+      transition: opacity var(--normal) var(--ease-out);
+    }
+    .tpl-card.applying {
+      pointer-events: none;
+      position: relative;
+    }
+    .tpl-card.applying .tpl-overlay {
+      background: rgba(0,0,0,0.55);
+    }
+    .tpl-card.applying::after {
+      content: '';
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 22px; height: 22px;
+      margin: -11px 0 0 -11px;
+      border: 2.5px solid rgba(255,255,255,0.35);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      z-index: 3;
+    }
     .tpl-bg{
       position:absolute;
       inset:0;
@@ -953,6 +977,11 @@
       border-color:var(--primary);
       box-shadow:0 0 0 3px var(--primary-glow),var(--shadow-sm);
       transform:translateY(-1px);
+    }
+    .bg-btn-disabled {
+      pointer-events: none;
+      opacity: 0.5;
+      filter: grayscale(0.4);
     }
     .bg-btn img{
       width:100%;
@@ -2123,6 +2152,7 @@
         <div class="sep" style="margin:16px 0 8px">Adjustments</div>
         <button class="gi" onclick="openBgAdjustModal()">Adjust Background Position</button>
         <div id="bg_sel_lbl" style="font-size:12px;color:var(--text-secondary);text-align:center;min-height:16px"></div>
+        <div id="bg-picker-status" style="font-size:12px;color:var(--primary);text-align:center;min-height:16px;font-weight:600"></div>
         <div class="slider-row">
           <div class="slider-header">
             <span class="slider-lbl">Fit mode</span>
@@ -3248,6 +3278,7 @@ function buildTpls() {
   });
 }
 function buildBgGrids() {
+  console.log('[bg] GRID REBUILD CALLED (image), time=', Date.now(), 'locked=', _bgSelectionLocked);
   ['pro','ff'].forEach(c => {
     const el = document.getElementById('bg_grid_' + c);
     el.innerHTML = '';
@@ -3256,12 +3287,13 @@ function buildBgGrids() {
       b.className = 'bg-btn'; b.id = 'bgb_' + bg.id; b.title = bg.label;
       b.innerHTML = `<img src="${thumb(bg.id)}" alt="${bg.label}" loading="lazy"/>
                      <div class="bg-label">${bg.label}</div>`;
-      b.onclick = () => selectBg(bg);
+      b.onclick = () => selectBackground({...bg, type: 'image'});
       el.appendChild(b);
     });
   });
 }
 function buildBgVideoGrid() {
+  console.log('[bg] GRID REBUILD CALLED (video), time=', Date.now(), 'locked=', _bgSelectionLocked);
   // Build both pro and ff video grids
   ['pro', 'ff'].forEach(cat => {
     const el = document.getElementById('bg_video_grid_' + cat);
@@ -3273,33 +3305,10 @@ function buildBgVideoGrid() {
       b.innerHTML = `<video src="${videoUrlPath}" autoplay loop muted playsinline 
                      style="width:100%; height:100%; object-fit: cover; background:#111;"></video>
                      <div class="bg-label">${v.label}</div>`;
-      b.onclick = () => selectBgVideo(v);
+      b.onclick = () => selectBackground({...v, type: 'video'});
       el.appendChild(b);
     });
   });
-}
-function selectBgVideo(v) {
-  document.querySelectorAll('.bg-btn').forEach(b => b.classList.remove('on'));
-  const b = document.getElementById('bgv_' + v.id);
-  if (b) b.classList.add('on');
-  document.getElementById('bg_sel_lbl').textContent = v.label + ' (animated)';
-  const bgs = document.getElementById('bg_summary'); if (bgs) bgs.textContent = v.label;
-  
-  // Show video preview
-  const previewEl = document.getElementById('prev_bg');
-  const vidUrl = videoUrl(v.id);
-  const relUrl = `/videos/${v.id}.mp4`;
-  previewEl.style.backgroundImage = 'none';
-  previewEl.innerHTML = `<video src="${relUrl}" autoplay loop muted playsinline style="width:100%; height:100%; object-fit:cover; display:block;"></video>`;
-  
-  pubBatch([
-    ['backgroundType', 'video'],
-    ['backgroundImage', ''],  // Clear image to avoid conflicts
-    ['backgroundVideoSource', vidUrl],
-    ['backgroundScale', '1.0'],
-    ['backgroundOffsetX', '0'],
-    ['backgroundOffsetY', '0'],
-  ]).then(showConfirm);
 }
 function bgTypeTab(type) {
   const staticSection = document.getElementById('bg_static_section');
@@ -3403,36 +3412,6 @@ function resetBgAdjust() {
     ['backgroundOffsetY', '0']
   ]);
 }
-function selectBg(bg) {
-  document.querySelectorAll('.bg-btn').forEach(b => b.classList.remove('on'));
-  const b = document.getElementById('bgb_' + bg.id);
-  if (b) b.classList.add('on');
-  document.getElementById('bg_sel_lbl').textContent = bg.label;
-  const bgs = document.getElementById('bg_summary'); if (bgs) bgs.textContent = bg.label;
-  curBg = qrc(bg.id);
-  isBgUploaded = false; // Template background, not uploaded
-  // Clear any video from preview
-  const previewEl = document.getElementById('prev_bg');
-  previewEl.innerHTML = '';
-  setPrevBg(curBg);
-  bgScale = 1.0; bgOffsetX = 0; bgOffsetY = 0;
-  document.getElementById('bg_zoom_slider').value = 100;
-  document.getElementById('bg_move_x_slider').value = 0;
-  document.getElementById('bg_move_y_slider').value = 0;
-  document.getElementById('bg_zoom_val').textContent = '100%';
-  document.getElementById('bg_move_x_val').textContent = '0px';
-  document.getElementById('bg_move_y_val').textContent = '0px';
-  updateBgPreviewTransform();
-  pubBatch([
-    ['backgroundType', 'image'],
-    ['backgroundImage', qrc(bg.id)],
-    ['backgroundOrientation', bg.ori],
-    ['backgroundFitMode', bg.fit || 'auto'],
-    ['backgroundScale', '1.0'],
-    ['backgroundOffsetX', '0'],
-    ['backgroundOffsetY', '0']
-  ]).then(showConfirm);
-}
 function highlightBg(qrcUrl) {
   // Do nothing since we removed the background selection grids
 }
@@ -3460,13 +3439,26 @@ function setPrevBg(qrcUrl) {
   el.style.background = 'linear-gradient(135deg, #1e1e1e, #2d2d2d)';
 }
 let templateChangeInProgress = false;
+const TEMPLATE_CHANGE_LOCK_MS = 1500;
+
+function lockTemplatePicker(locked, activeId) {
+  document.querySelectorAll('.tpl-card').forEach(el => {
+    const isActive = activeId && el.id === 'tpl_' + activeId;
+    el.classList.toggle('tpl-card-disabled', locked && !isActive);
+    el.classList.toggle('applying', locked && isActive);
+  });
+}
+
 async function applyTpl(t) {
+  console.log('[tpl] click, locked=', templateChangeInProgress, 'time=', Date.now());
   // Prevent rapid consecutive template changes
   if (templateChangeInProgress) {
-    console.log('Template change already in progress, ignoring');
+    console.log('[tpl] BLOCKED, time=', Date.now());
     return;
   }
   templateChangeInProgress = true;
+  console.log('[tpl] LOCK SET, time=', Date.now());
+  lockTemplatePicker(true, t.id);
   
   try {
     document.querySelectorAll('.tpl-card').forEach(c => c.classList.remove('on'));
@@ -3563,7 +3555,11 @@ async function applyTpl(t) {
   } catch (e) {
     console.error('Template change error:', e);
   } finally {
-    templateChangeInProgress = false;
+    setTimeout(() => {
+      templateChangeInProgress = false;
+      console.log('[tpl] LOCK RELEASED, time=', Date.now());
+      lockTemplatePicker(false);
+    }, TEMPLATE_CHANGE_LOCK_MS);
   }
 }
 function removeBg() {
@@ -3899,6 +3895,88 @@ function debouncedPubTextSize(key, v) {
 const debouncedPubBgScale = debounce((v) => pub('backgroundScale', String(v)), 150);
 const debouncedPubBgOffsetX = debounce((v) => pub('backgroundOffsetX', String(v)), 150);
 const debouncedPubBgOffsetY = debounce((v) => pub('backgroundOffsetY', String(v)), 150);
+
+// Background selection cooldown lock
+let _bgSelectionLocked = false;
+const BG_SELECTION_LOCK_MS = 1500;
+
+function selectBackground(item) {
+  console.log('[bg] click, locked=', _bgSelectionLocked, 'time=', Date.now());
+  if (_bgSelectionLocked) {
+    console.log('[bg] BLOCKED, time=', Date.now());
+    return; // hard block, no queueing
+  }
+
+  _bgSelectionLocked = true;
+  console.log('[bg] LOCK SET, time=', Date.now());
+  lockBackgroundPicker(true); // visual: dim thumbnails, show small spinner/badge
+
+  // Update UI
+  document.querySelectorAll('.bg-btn').forEach(b => b.classList.remove('on'));
+  const btnId = item.type === 'video' ? 'bgv_' + item.id : 'bgb_' + item.id;
+  const btn = document.getElementById(btnId);
+  if (btn) btn.classList.add('on');
+  document.getElementById('bg_sel_lbl').textContent = item.label + (item.type === 'video' ? ' (animated)' : '');
+  const bgs = document.getElementById('bg_summary'); if (bgs) bgs.textContent = item.label;
+
+  // Show preview
+  const previewEl = document.getElementById('prev_bg');
+  if (item.type === 'video') {
+    const relUrl = `/videos/${item.id}.mp4`;
+    previewEl.style.backgroundImage = 'none';
+    previewEl.innerHTML = `<video src="${relUrl}" autoplay loop muted playsinline style="width:100%; height:100%; object-fit:cover; display:block;"></video>`;
+  } else {
+    previewEl.innerHTML = '';
+    setPrevBg(qrc(item.id));
+    bgScale = 1.0; bgOffsetX = 0; bgOffsetY = 0;
+    document.getElementById('bg_zoom_slider').value = 100;
+    document.getElementById('bg_move_x_slider').value = 0;
+    document.getElementById('bg_move_y_slider').value = 0;
+    document.getElementById('bg_zoom_val').textContent = '100%';
+    document.getElementById('bg_move_x_val').textContent = '0px';
+    document.getElementById('bg_move_y_val').textContent = '0px';
+    updateBgPreviewTransform();
+  }
+
+  const isVideo = item.type === 'video';
+  const payload = isVideo
+    ? [
+        ['backgroundType', 'video'],
+        ['backgroundImage', ''],
+        ['backgroundVideoSource', videoUrl(item.id)],
+        ['backgroundScale', '1.0'],
+        ['backgroundOffsetX', '0'],
+        ['backgroundOffsetY', '0'],
+      ]
+    : [
+        ['backgroundType', 'image'],
+        ['backgroundImage', qrc(item.id)],
+        ['backgroundOrientation', item.ori || ''],
+        ['backgroundFitMode', item.fit || 'auto'],
+        ['backgroundScale', '1.0'],
+        ['backgroundOffsetX', '0'],
+        ['backgroundOffsetY', '0']
+      ];
+
+  pubBatch(payload)
+    .then(showConfirm)
+    .catch(showError)
+    .finally(() => {
+      setTimeout(() => {
+        _bgSelectionLocked = false;
+        console.log('[bg] LOCK RELEASED, time=', Date.now());
+        lockBackgroundPicker(false);
+      }, BG_SELECTION_LOCK_MS);
+    });
+}
+
+function lockBackgroundPicker(locked) {
+  document.querySelectorAll('.bg-btn').forEach(el => {
+    el.classList.toggle('bg-btn-disabled', locked);
+  });
+  const statusEl = document.getElementById('bg-picker-status');
+  if (statusEl) statusEl.textContent = locked ? 'Applying…' : '';
+}
 
 /* ===== SECTION =====
    INIT — load state from /api/state and hydrate UI

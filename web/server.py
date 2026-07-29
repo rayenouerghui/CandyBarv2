@@ -24,12 +24,20 @@ import os
 import re
 import socket
 import sys
+import threading
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from PySide6.QtCore import QFile, QStandardPaths
 from src.logging import get_logger
 
 logger = get_logger()
+
+# Debounce infrastructure for expensive keys
+_debounce_timers = {}
+_debounce_lock = threading.Lock()
+_DEBOUNCED_KEYS = {"backgroundVideoSource", "backgroundImage",
+                    "backgroundScale", "backgroundOffsetX", "backgroundOffsetY"}
+_DEBOUNCE_DELAY = 0.15
 
 MAX_LOGO_BYTES = 2 * 1024 * 1024   # 2 MB
 MAX_BG_BYTES   = 5 * 1024 * 1024   # 5 MB
@@ -306,8 +314,20 @@ def create_handler(upload_dir, mqtt_client, display_persistence, usage_stats, fo
                     cats.append(new_cat)
                     display_persistence.save("categoriesList", ",".join(cats))
 
-            mqtt_client.direct_command(key, payload)
-            mqtt_client.publish(f"display/{category}/{key}", payload)
+            def _do_publish():
+                mqtt_client.direct_command(key, payload)
+                mqtt_client.publish(f"display/{category}/{key}", payload)
+
+            if key in _DEBOUNCED_KEYS:
+                with _debounce_lock:
+                    old = _debounce_timers.get(key)
+                    if old:
+                        old.cancel()
+                    t = threading.Timer(_DEBOUNCE_DELAY, _do_publish)
+                    _debounce_timers[key] = t
+                    t.start()
+            else:
+                _do_publish()
 
             if key == "currentNumber":
                 usage_stats.record_number_change()

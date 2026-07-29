@@ -388,6 +388,26 @@ Item {
     // ── Background ───────────────────────────────────────────────────────
     property int _bgFillMode: Image.PreserveAspectCrop
 
+    // ── Video resilience state ──────────────────────────────────────────
+    property bool   _videoLoading: false
+    property string _pendingVideoSource: ""
+    property string _lastGoodVideoSource: ""   // last source that reached LoadedMedia
+    property bool   _videoRecoveryInProgress: false  // true while retrying a fallback
+    property int    _videoFailCount: 0
+    readonly property int _maxVideoFailRetries: 2   // give up after this many consecutive failures
+    property int    _videoLoadingSlot: -1  // which slot is currently loading
+    property int    _activeVideoSlot: 0   // 0 or 1 — which pair is currently "on screen"
+
+    Timer {
+        id: video_swap_stop_timer
+        property int oldSlot: -1
+        interval: 400 // slightly after the 350ms opacity fade completes
+        repeat: false
+        onTriggered: {
+            if (oldSlot >= 0) root._playerFor(oldSlot).stop()
+        }
+    }
+
     function _resolveBackgroundFillMode(target) {
         var mode = DisplayState.backgroundFitMode
         if (mode === "fit") return Image.PreserveAspectFit
@@ -416,18 +436,96 @@ Item {
         return src
     }
 
+    // Fall back to the image background entirely — the "nothing works,
+    // stop trying, keep the app alive" escape hatch.
+    function _fallBackToImageBackground() {
+        console.log("[display] video recovery exhausted — falling back to image background")
+        root._videoLoading = false
+        root._videoRecoveryInProgress = false
+        root._pendingVideoSource = ""
+        root._videoFailCount = 0
+        root._videoLoadingSlot = -1
+        video_player_0.stop()
+        video_player_0.source = ""
+        video_player_1.stop()
+        video_player_1.source = ""
+        // Don't touch DisplayState.backgroundType here — that's persisted
+        // admin config. We just stop trying to render video locally so the
+        // display shows the (already-visible) image layer instead of a
+        // frozen/black video output.
+    }
+
+    function _playerFor(slot)  { return slot === 0 ? video_player_0 : video_player_1 }
+
     function _reloadBackgroundVideo() {
         if (DisplayState.backgroundType !== "video") return
         var src = root._videoSourceForState()
-        console.log("[display] reload background video", DisplayState.backgroundType, src)
         if (!src) return
-        
-        // Use a more efficient approach without stopping first if source is the same
-        if (background_video_player.source !== src) {
-            background_video_player.stop()
-            background_video_player.source = src
+
+        var activePlayer = _playerFor(root._activeVideoSlot)
+        if (activePlayer.source.toString() === src) {
+            if (activePlayer.playbackState !== MediaPlayer.PlayingState) activePlayer.play()
+            return  // already showing this source, nothing to do
         }
-        background_video_player.play()
+
+        // load into the OTHER slot — active slot keeps playing uninterrupted
+        var loadingSlot = root._activeVideoSlot === 0 ? 1 : 0
+        var loadingPlayer = _playerFor(loadingSlot)
+        root._pendingVideoSource = src
+        root._videoLoadingSlot = loadingSlot
+        loadingPlayer.source = src
+        loadingPlayer.play()
+    }
+
+    function _onVideoMediaStatus(slot, mediaStatus) {
+        if (slot !== root._videoLoadingSlot) return // not the one we're waiting on
+
+        if (mediaStatus === MediaPlayer.LoadedMedia || mediaStatus === MediaPlayer.BufferedMedia) {
+            root._lastGoodVideoSource = _playerFor(slot).source.toString()
+            root._videoFailCount = 0
+            // swap: this slot becomes active, old one fades out and stops
+            var oldSlot = root._activeVideoSlot
+            root._activeVideoSlot = slot
+            root._videoLoadingSlot = -1
+            // stop the old player only after the crossfade finishes
+            video_swap_stop_timer.oldSlot = oldSlot
+            video_swap_stop_timer.restart()
+        } else if (mediaStatus === MediaPlayer.InvalidMedia) {
+            root._handleVideoLoadFailure(_playerFor(slot).source.toString(), slot)
+        }
+    }
+
+    // Called when a video load fails. Tries, in order: a queued newer
+    // request, the last known-good video, then gives up gracefully.
+    function _handleVideoLoadFailure(failedSrc, slot) {
+        root._videoLoadingSlot = -1
+        root._videoFailCount += 1
+
+        // A newer request already showed up — just go straight to it,
+        // don't waste time retrying the broken one.
+        if (root._pendingVideoSource !== "") {
+            root._reloadBackgroundVideo()
+            return
+        }
+
+        if (root._videoFailCount > root._maxVideoFailRetries) {
+            root._fallBackToImageBackground()
+            return
+        }
+
+        // Try the last video that worked, if it isn't the one that just failed.
+        if (root._lastGoodVideoSource && root._lastGoodVideoSource !== failedSrc) {
+            console.log("[display] video failed, recovering to last-good source")
+            root._videoRecoveryInProgress = true
+            var loadingSlot = root._activeVideoSlot === 0 ? 1 : 0
+            root._videoLoadingSlot = loadingSlot
+            _playerFor(loadingSlot).source = root._lastGoodVideoSource
+            _playerFor(loadingSlot).play()
+            return
+        }
+
+        // Nothing safe to recover to — stop trying, don't freeze.
+        root._fallBackToImageBackground()
     }
 
     Item {
@@ -441,9 +539,11 @@ Item {
             opacity: DisplayState.backgroundType !== "video" ? 1 : 0
             source: DisplayState.backgroundType === "video" ? "" : DisplayState.backgroundImage
             fillMode: root._bgFillMode
-            asynchronous: false
+            asynchronous: true
             cache: false
             smooth: true
+            sourceSize.width: root.width
+            sourceSize.height: root.height
             scale: DisplayState.backgroundScale
             transformOrigin: Item.Center
             transform: Translate {
@@ -457,86 +557,85 @@ Item {
             }
         }
 
+        // ── Dual video player/output for seamless crossfade ─────────────
         MediaPlayer {
-            id: background_video_player
-            source: root._videoSourceForState()
+            id: video_player_0
             loops: MediaPlayer.Infinite
             audioOutput: null
-            videoOutput: background_video_output
-            onSourceChanged: {
-                console.log("[display] video source changed:", source)
-                if (source.toString() !== "" && DisplayState.backgroundType === "video") {
-                    play()
-                }
-            }
+            videoOutput: video_output_0
             onErrorOccurred: function(errorString, error) {
-                console.log("[display] background video error:", errorString, "source:", source, "error:", error)
+                root._handleVideoLoadFailure(source.toString(), 0)
             }
-            onPlaybackStateChanged: {
-                console.log("[display] playback state:", playbackState)
+            onMediaStatusChanged: root._onVideoMediaStatus(0, mediaStatus)
+        }
+        MediaPlayer {
+            id: video_player_1
+            loops: MediaPlayer.Infinite
+            audioOutput: null
+            videoOutput: video_output_1
+            onErrorOccurred: function(errorString, error) {
+                root._handleVideoLoadFailure(source.toString(), 1)
             }
+            onMediaStatusChanged: root._onVideoMediaStatus(1, mediaStatus)
         }
 
         VideoOutput {
-            id: background_video_output
+            id: video_output_0
             anchors.fill: parent
-            opacity: (DisplayState.backgroundType === "video" && 
-                     background_video_player.playbackState === MediaPlayer.PlayingState) ? 1 : 0
-            fillMode: DisplayState.backgroundFitMode === "stretch"
-                      ? VideoOutput.Stretch
-                      : (DisplayState.backgroundFitMode === "fit"
-                         ? VideoOutput.PreserveAspectFit
-                         : VideoOutput.PreserveAspectCrop)
+            opacity: (DisplayState.backgroundType === "video" && root._activeVideoSlot === 0
+                      && video_player_0.playbackState === MediaPlayer.PlayingState) ? 1 : 0
+            fillMode: DisplayState.backgroundFitMode === "stretch" ? VideoOutput.Stretch
+                      : (DisplayState.backgroundFitMode === "fit" ? VideoOutput.PreserveAspectFit : VideoOutput.PreserveAspectCrop)
             scale: DisplayState.backgroundScale
             transformOrigin: Item.Center
-            transform: Translate {
-                x: DisplayState.backgroundOffsetX
-                y: DisplayState.backgroundOffsetY
-            }
-            Behavior on opacity {
-                NumberAnimation { duration: 350; easing.type: Easing.InOutQuad }
-            }
+            transform: Translate { x: DisplayState.backgroundOffsetX; y: DisplayState.backgroundOffsetY }
+            Behavior on opacity { NumberAnimation { duration: 350; easing.type: Easing.InOutQuad } }
+        }
+        VideoOutput {
+            id: video_output_1
+            anchors.fill: parent
+            opacity: (DisplayState.backgroundType === "video" && root._activeVideoSlot === 1
+                      && video_player_1.playbackState === MediaPlayer.PlayingState) ? 1 : 0
+            fillMode: DisplayState.backgroundFitMode === "stretch" ? VideoOutput.Stretch
+                      : (DisplayState.backgroundFitMode === "fit" ? VideoOutput.PreserveAspectFit : VideoOutput.PreserveAspectCrop)
+            scale: DisplayState.backgroundScale
+            transformOrigin: Item.Center
+            transform: Translate { x: DisplayState.backgroundOffsetX; y: DisplayState.backgroundOffsetY }
+            Behavior on opacity { NumberAnimation { duration: 350; easing.type: Easing.InOutQuad } }
         }
 
-        // Video loading indicator
+        // spinner — only show if NEITHER slot is currently playing at all
         Item {
             anchors.centerIn: parent
-            visible: DisplayState.backgroundType === "video" && 
-                     (background_video_player.playbackState === MediaPlayer.LoadingState || 
-                      background_video_player.playbackState === MediaPlayer.StoppedState || 
-                      background_video_player.playbackState === MediaPlayer.PausedState)
+            visible: DisplayState.backgroundType === "video"
+                     && video_player_0.playbackState !== MediaPlayer.PlayingState
+                     && video_player_1.playbackState !== MediaPlayer.PlayingState
             width: 60; height: 60
-            
             Rectangle {
-                id: loaderRect
                 anchors.centerIn: parent
-                width: 48; height: 48
-                radius: 24
+                width: 48; height: 48; radius: 24
                 color: "transparent"
-                border {
-                    width: 4
-                    color: root.accent_gold
-                }
-                
-                RotationAnimator on rotation {
-                    from: 0; to: 360
-                    duration: 1000
-                    loops: Animation.Infinite
-                    running: parent.visible
-                }
+                border { width: 4; color: root.accent_gold }
+                RotationAnimator on rotation { from: 0; to: 360; duration: 1000; loops: Animation.Infinite; running: parent.visible }
             }
         }
     }
 
     function _updateBackground() {
-        // Handle both image and video backgrounds
         root._updateBackgroundFitMode()
-        
+
         if (DisplayState.backgroundType === "video") {
             root._reloadBackgroundVideo()
         } else {
-            // Stop video playback when switching to image background
-            background_video_player.stop()
+            // Stop video playback when switching to image background,
+            // and reset recovery state so a later switch back to video starts fresh.
+            video_player_0.stop()
+            video_player_1.stop()
+            root._videoLoading = false
+            root._videoRecoveryInProgress = false
+            root._pendingVideoSource = ""
+            root._videoFailCount = 0
+            root._videoLoadingSlot = -1
         }
     }
 

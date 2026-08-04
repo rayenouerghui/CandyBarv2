@@ -28,7 +28,7 @@ A self-contained kiosk queue-number display system with web-based admin panel.
 
 ### Prerequisites
 
-- Python 3.8 or higher
+- Python 3.11 or 3.12 (required - pygame and PySide6 have limited compatibility)
 - Linux system (tested on Ubuntu 22.04)
 - Audio output device
 

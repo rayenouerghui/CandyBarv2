@@ -6,6 +6,27 @@
 set -e
 cd "$(dirname "$0")"
 
+# ── 0. Check Python version ────────────────────────────────────
+PYTHON_CMD="python3"
+if ! command -v python3 &> /dev/null; then
+    echo "[run] ERROR: python3 not found. Please install Python 3.11 or 3.12."
+    exit 1
+fi
+
+PYTHON_VERSION=$(python3 -c 'import sys; print(".".join(map(str, sys.version_info[:2])))')
+PYTHON_MAJOR=$(echo $PYTHON_VERSION | cut -d. -f1)
+PYTHON_MINOR=$(echo $PYTHON_VERSION | cut -d. -f2)
+
+echo "[run] Detected Python $PYTHON_VERSION"
+
+# Check if version is 3.11 or 3.12
+if [ "$PYTHON_MAJOR" -ne 3 ] || { [ "$PYTHON_MINOR" -ne 11 ] && [ "$PYTHON_MINOR" -ne 12 ]; }; then
+    echo "[run] ERROR: CandyBarV2 requires Python 3.11 or 3.12."
+    echo "[run] Current version: $PYTHON_VERSION"
+    echo "[run] Please install Python 3.11 or 3.12 from https://www.python.org/downloads/"
+    exit 1
+fi
+
 PYTHON="./venv/bin/python3"
 PIP="./venv/bin/pip"
 RCC="./venv/bin/pyside6-rcc"

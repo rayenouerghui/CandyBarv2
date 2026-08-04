@@ -49,5 +49,4 @@ home/
 *.rcc
 *.qrc.py
 # Generated Python resource bindings
-app/imports/resource_rc.py
-fluentui/imports/resource_rc.py
+resources/qrc/resource_rc.py

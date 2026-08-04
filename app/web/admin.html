@@ -2552,9 +2552,9 @@
         <div class="slider-row">
           <div class="slider-header">
             <span class="slider-lbl">Size</span>
-            <span class="slider-val" id="font_size_val">96px</span>
+            <span class="slider-val" id="font_size_val">120px</span>
           </div>
-          <input type="range" id="font_size_slider" min="120" max="800" step="1" value="96"
+          <input type="range" id="font_size_slider" min="120" max="800" step="1" value="120"
                  oninput="onFontSizeSlider(this.value)"/>
         </div>
 
@@ -2753,6 +2753,8 @@ const FONT_ELEMENT_CONFIG = {
     colorKey: 'numberColor',
     previewId: 'prev_num',
     defaultSize: 120,
+    minSize: 120,
+    maxSize: 800,
     defaultColor: '#FFB84D'
   },
   category: {
@@ -2760,7 +2762,9 @@ const FONT_ELEMENT_CONFIG = {
     sizeKey: 'categoryFontSize',
     colorKey: 'categoryColor',
     previewId: 'prev_cat',
-    defaultSize: 120,
+    defaultSize: 60,
+    minSize: 10,
+    maxSize: 200,
     defaultColor: '#FFB84D'
   },
   facility: {
@@ -2768,7 +2772,9 @@ const FONT_ELEMENT_CONFIG = {
     sizeKey: 'facilityFontSize',
     colorKey: 'facilityColor',
     previewId: 'prev_fac',
-    defaultSize: 120,
+    defaultSize: 60,
+    minSize: 10,
+    maxSize: 200,
     defaultColor: '#FFB84D'
   },
   banner: {
@@ -2776,7 +2782,9 @@ const FONT_ELEMENT_CONFIG = {
     sizeKey: 'bannerFontSize',
     colorKey: 'bannerColor',
     previewId: 'prev_fac',
-    defaultSize: 120,
+    defaultSize: 60,
+    minSize: 10,
+    maxSize: 200,
     defaultColor: '#FFFFFF'
   },
   serving: {
@@ -2784,7 +2792,9 @@ const FONT_ELEMENT_CONFIG = {
     sizeKey: 'nowServingFontSize',
     colorKey: 'nowServingColor',
     previewId: 'prev_label',
-    defaultSize: 120,
+    defaultSize: 60,
+    minSize: 10,
+    maxSize: 200,
     defaultColor: '#FFFFFF'
   }
 };
@@ -2795,7 +2805,19 @@ function setFontElement(element) {
   _currentFontElement = element;
   const config = FONT_ELEMENT_CONFIG[element];
 
-  // Update tab buttons
+  // Update slider min/max/value
+  const slider = document.getElementById('font_size_slider');
+  if (slider) {
+    slider.min = config.minSize;
+    slider.max = config.maxSize;
+    slider.value = _fontValues[config.sizeKey] || config.defaultSize;
+  }
+
+  // Update displayed value
+  const sizeValDisplay = document.getElementById('font_size_val');
+  if (sizeValDisplay) {
+    sizeValDisplay.textContent = (slider ? slider.value : config.defaultSize) + 'px';
+  }
   document.querySelectorAll('#font_target_grid .gi').forEach(b =>
     b.classList.toggle('on', b.dataset.target === element));
 
@@ -2831,7 +2853,7 @@ function setFontFamily(family) {
 
 function onFontSizeSlider(value) {
   const config = FONT_ELEMENT_CONFIG[_currentFontElement];
-  const v = Math.max(120, Math.min(800, parseInt(value) || 120));
+  const v = Math.max(config.minSize, Math.min(config.maxSize, parseInt(value) || config.defaultSize));
 
   _fontValues[config.sizeKey] = v;
   document.getElementById('font_size_val').textContent = v + 'px';

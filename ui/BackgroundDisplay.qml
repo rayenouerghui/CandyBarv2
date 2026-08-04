@@ -179,9 +179,9 @@ Item {
         }
         onStatusChanged: root.updateBackgroundFitMode()
         onSourceSizeChanged: root.updateBackgroundFitMode()
-        Behavior on opacity {
-            NumberAnimation { duration: 350; easing.type: Easing.InOutQuad }
-        }
+        // Behavior on opacity {
+        //     NumberAnimation { duration: 350; easing.type: Easing.InOutQuad }
+        // }
     }
 
     MediaPlayer {
@@ -216,7 +216,7 @@ Item {
         scale: DisplayState.backgroundScale
         transformOrigin: Item.Center
         transform: Translate { x: DisplayState.backgroundOffsetX; y: DisplayState.backgroundOffsetY }
-        Behavior on opacity { NumberAnimation { duration: 350; easing.type: Easing.InOutQuad } }
+        // Behavior on opacity { NumberAnimation { duration: 350; easing.type: Easing.InOutQuad } }
     }
 
     VideoOutput {
@@ -229,7 +229,7 @@ Item {
         scale: DisplayState.backgroundScale
         transformOrigin: Item.Center
         transform: Translate { x: DisplayState.backgroundOffsetX; y: DisplayState.backgroundOffsetY }
-        Behavior on opacity { NumberAnimation { duration: 350; easing.type: Easing.InOutQuad } }
+        // Behavior on opacity { NumberAnimation { duration: 350; easing.type: Easing.InOutQuad } }
     }
 
     Item {

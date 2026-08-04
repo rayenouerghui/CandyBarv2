@@ -1,6 +1,5 @@
 import QtQuick 2.15
 import QtQuick.Window 2.15
-import FluentUI 1.0
 import "global"
 
 // Pure kiosk app — no routing, no navigation shell, one window, one view.
@@ -13,9 +12,6 @@ Window {
     title: "CandyBarV2"
 
     Component.onCompleted: {
-        FluTheme.darkMode = FluThemeType.DarkMode.Dark
-        FluTheme.animationEnabled = false
-
         // Populate URLs from NetworkHelper
         DisplayState.publicUrl = NetworkHelper.publicUrl
         DisplayState.adminUrl  = NetworkHelper.adminUrl

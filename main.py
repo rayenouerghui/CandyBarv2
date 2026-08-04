@@ -8,12 +8,18 @@ import threading
 import pathlib
 import shutil
 
+# Software rendering for better performance on Raspberry Pi
+# DISABLED for now because it breaks video playback
+# Uncomment the line below if you need better performance and don't use videos
+# os.environ["QT_QUICK_BACKEND"] = "software"
+
 from PySide6.QtCore import QUrl, QFile, QStandardPaths
 from PySide6.QtGui import QGuiApplication, QFontDatabase
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtQuick import QQuickWindow, QSGRendererInterface
 
-from fluentui import FluentUI
+# FluentUI removed for performance optimization on Raspberry Pi
+# from fluentui import FluentUI
 
 from app.mqtt.client import MQTTClient
 from app.utils.network_helper import NetworkHelper
@@ -134,7 +140,8 @@ def main():
 
     if not HEADLESS:
         engine = QQmlApplicationEngine()
-        FluentUI.registerTypes(engine)
+        # FluentUI removed for performance optimization on Raspberry Pi
+        # FluentUI.registerTypes(engine)
 
     persistence = DisplayPersistence()
     usage_stats = UsageStats()

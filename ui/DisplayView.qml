@@ -1,6 +1,5 @@
 import QtQuick 2.15
 import QtQuick.Layouts 1.15
-import FluentUI 1.0
 import "global"
 
 // ── DisplayView ──────────────────────────────────────────────────────────
@@ -33,9 +32,9 @@ Item {
     anchors.fill: parent
 
     // ── Timing constants ─────────────────────────────────────────────────
-    readonly property int dur_micro: 150   // number exit
-    readonly property int dur_std:   300   // number entrance / state transitions
-    readonly property int dur_full:  600   // layout crossfade / color transitions
+    readonly property int dur_micro: 0   // number exit (disabled for performance)
+    readonly property int dur_std:   0   // number entrance / state transitions (disabled)
+    readonly property int dur_full:  0   // layout crossfade / color transitions (disabled)
 
     // ── Radius tokens ────────────────────────────────────────────────────
     readonly property int radius_outer: 20
@@ -74,12 +73,6 @@ Item {
     property color accent_gold_dim: Qt.rgba(DisplayState.accentColor.r,
                                             DisplayState.accentColor.g,
                                             DisplayState.accentColor.b, 0.15)
-    Behavior on accent_gold {
-        ColorAnimation {
-            duration: root.dur_full
-            easing.type: Easing.InOutQuad
-        }
-    }
 
     // Glass card behind the whole number+category stack — a soft, neutral
     // dark scrim that guarantees a stable contrast surface no matter what
@@ -102,70 +95,11 @@ Item {
     }
 
     // ── Number change animation ──────────────────────────────────────────
-    // Phase 1 (exit): lift + shrink + fade  →  150ms InCubic
-    // Phase 2 (enter): drop in + grow + fade →  300ms OutQuart
+    // Disabled for performance on Raspberry Pi
     property string _shownNumber:   DisplayState.currentNumber
-    property real   _numOpacity:    1.0
-    property real   _numScale:      1.0
-    property real   _numTranslateY: 0
 
-    readonly property real _numOutScale:    0.86
-    readonly property real _numInFromScale: 0.90
-    readonly property real _numOutLift:     Math.max(root.height * 0.022, 8)
-    readonly property real _numInDrop:      Math.max(root.height * 0.028, 10)
-
-    function _resetNumberAnim() {
-        _numOpacity    = 1.0
-        _numScale      = 1.0
-        _numTranslateY = 0
-    }
-
-    onVisibleChanged: {
-        if (visible) {
-            _shownNumber = DisplayState.currentNumber
-            _resetNumberAnim()
-        }
-    }
-
-    Connections {
-        target: DisplayState
-        function onCurrentNumberChanged() {
-            if (_shownNumber === DisplayState.currentNumber) return
-            num_change_anim.stop()
-            num_change_anim.start()
-        }
-    }
-
-    SequentialAnimation {
-        id: num_change_anim
-        alwaysRunToEnd: false
-
-        ParallelAnimation {
-            NumberAnimation { target: root; property: "_numOpacity";    to: 0;                duration: root.dur_micro; easing.type: Easing.InCubic }
-            NumberAnimation { target: root; property: "_numScale";      to: root._numOutScale; duration: root.dur_micro; easing.type: Easing.InCubic }
-            NumberAnimation { target: root; property: "_numTranslateY"; to: -root._numOutLift; duration: root.dur_micro; easing.type: Easing.InCubic }
-        }
-        ScriptAction {
-            script: {
-                root._shownNumber   = DisplayState.currentNumber
-                root._numTranslateY = root._numInDrop
-                root._numScale      = root._numInFromScale
-                root._numOpacity    = 0
-            }
-        }
-        ParallelAnimation {
-            NumberAnimation { target: root; property: "_numOpacity";    to: 1;   duration: root.dur_std; easing.type: Easing.OutQuart }
-            NumberAnimation { target: root; property: "_numScale";      to: 1.0; duration: root.dur_std; easing.type: Easing.OutQuart }
-            NumberAnimation { target: root; property: "_numTranslateY"; to: 0;   duration: root.dur_std; easing.type: Easing.OutQuart }
-        }
-    }
-
-    // ── Layout crossfade controller ──────────────────────────────────────
     property real _splitOpacity:    0
     property real _centeredOpacity: 1
-
-    Behavior on _splitOpacity    { NumberAnimation { duration: dur_full; easing.type: Easing.OutCubic } }
-    Behavior on _centeredOpacity { NumberAnimation { duration: dur_full; easing.type: Easing.OutCubic } }
 
     function _applyLayout(lt) {
          var known = (lt === "Split" || lt === "Centered")

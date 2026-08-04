@@ -15,14 +15,14 @@ from PySide6.QtQuick import QQuickWindow, QSGRendererInterface
 
 from fluentui import FluentUI
 
-from src.mqtt.client import MQTTClient
-from src.utils.network_helper import NetworkHelper
-from src.config.persistence import DisplayPersistence
-from src.utils.stats import UsageStats
-from src.audio.engine import AudioEngine
-from src.display.font_manager import FontManager
-from app.imports import resource_rc as rc
-from src.logging import setup_logger, get_logger
+from app.mqtt.client import MQTTClient
+from app.utils.network_helper import NetworkHelper
+from app.settings.config.persistence import DisplayPersistence
+from app.utils.stats import UsageStats
+from app.audio.engine import AudioEngine
+from app.display.font_manager import FontManager
+import resources.qrc.resource_rc as rc
+from app.utils.logger import setup_logger, get_logger
 
 
 def _copy_tree_preserve_existing(src: pathlib.Path, dest: pathlib.Path) -> None:
@@ -78,7 +78,7 @@ def _copy_static_assets_to_data_dir(data_dir: str) -> None:
 def _start_web_server(mqtt_client, display_persistence, usage_stats, font_manager, audio_engine):
     logger = get_logger()
     try:
-        import web.server as srv
+        from app.web import server as srv
         t = threading.Thread(
             target=srv.run,
             args=(mqtt_client, display_persistence, usage_stats, font_manager, audio_engine, sys.argv),

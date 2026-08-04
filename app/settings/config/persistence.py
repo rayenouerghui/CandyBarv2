@@ -100,6 +100,12 @@ class DisplayPersistence(QObject):
     def get_current_number(self) -> str:
         return str(self.load("currentNumber", "001"))
 
+    def get_category(self) -> str:
+        return str(self.load("category", "pizza"))
+
+    def get_category_display_name(self) -> str:
+        return str(self.load("categoryDisplayName", "pizza"))
+
     @Slot(result='QVariantList')
     def get_next_up(self) -> list:
         raw = self.load("nextUp", "")

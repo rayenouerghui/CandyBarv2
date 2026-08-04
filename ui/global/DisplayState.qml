@@ -197,8 +197,8 @@ QtObject {
 
             bannerText            = p.load("bannerText", "Welcome — please wait for your number to be called")
             facilityName          = p.load("facilityName", "CandyBar Service Centre")
-            category              = p.load("category", "A")
-            categoryDisplayName   = p.load("categoryDisplayName", "Category A")
+            category              = p.load("category", "pizza")
+            categoryDisplayName   = p.load("categoryDisplayName", "pizza")
             categoryVisible       = p.load("categoryVisible", "false") !== "false"
             categoryAudioEnabled  = p.load("categoryAudioEnabled", "false") !== "false"
             logoPosition          = p.load("logoPosition", "top-center")

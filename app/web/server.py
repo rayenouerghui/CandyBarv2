@@ -295,6 +295,7 @@ def create_handler(upload_dir, mqtt_client, display_persistence, usage_stats, fo
                     ("logoPosition", "top-center"),
                     ("facilityVisible", "true"),
                     ("categoryVisible", "false"),
+                    ("categoriesList", "pizza,hamburger,makloub,sandwich"),
                     ("backgroundImage", "qrc:/app/res/image/pro_geometric.jpg"),
                     ("backgroundFitMode", "crop"),
                     ("backgroundScale", "1.0"),
@@ -363,7 +364,7 @@ def create_handler(upload_dir, mqtt_client, display_persistence, usage_stats, fo
 
             try:
                 # Remove category from categoriesList
-                cats_str = str(display_persistence.load("categoriesList", "Category A"))
+                cats_str = str(display_persistence.load("categoriesList", "pizza,hamburger,makloub,sandwich"))
                 cats = [c.strip() for c in cats_str.split(",") if c.strip()]
                 if category in cats:
                     cats.remove(category)
@@ -406,7 +407,7 @@ def create_handler(upload_dir, mqtt_client, display_persistence, usage_stats, fo
                 display_persistence.save(key, payload)
 
             if key == "categoryDisplayName":
-                cats_str = str(display_persistence.load("categoriesList", "Category A"))
+                cats_str = str(display_persistence.load("categoriesList", "pizza,hamburger,makloub,sandwich"))
                 cats = [c.strip() for c in cats_str.split(",") if c.strip()]
                 new_cat = payload.strip()
                 if new_cat and new_cat not in cats:
@@ -586,9 +587,9 @@ def create_handler(upload_dir, mqtt_client, display_persistence, usage_stats, fo
             """Build the current display state. Always returns a valid dict, even on errors."""
             try:
                 p = display_persistence
-                cats_str = str(p.load("categoriesList", "Category A"))
+                cats_str = str(p.load("categoriesList", "pizza,hamburger,makloub,sandwich"))
                 categories = [c.strip() for c in cats_str.split(",") if c.strip()]
-                current_cat = str(p.load("categoryDisplayName", "Category A"))
+                current_cat = str(p.load("categoryDisplayName", "pizza"))
                 if current_cat not in categories:
                     categories.append(current_cat)
 

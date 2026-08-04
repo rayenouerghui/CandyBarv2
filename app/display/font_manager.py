@@ -9,18 +9,25 @@ import shutil
 from PySide6.QtCore import QObject, Slot, Signal, Property
 from PySide6.QtGui import QFontDatabase, QGuiApplication
 
-from fluentui.Singleton import Singleton
 from app.utils.logger import get_logger
 from app.utils.common import get_app_data_dir
 
 logger = get_logger()
+
+# Simple singleton pattern
+_font_manager_instance = None
+
+def get_font_manager_instance():
+    global _font_manager_instance
+    if _font_manager_instance is None:
+        _font_manager_instance = FontManager()
+    return _font_manager_instance
 
 
 def _safe_filename(name: str) -> str:
     return re.sub(r"[^\w\-]", "_", name.lower())[:64]
 
 
-@Singleton
 class FontManager(QObject):
     fontsChanged = Signal()
 

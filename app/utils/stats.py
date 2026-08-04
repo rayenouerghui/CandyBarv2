@@ -8,13 +8,20 @@ import time
 from PySide6.QtCore import QObject, QSettings, Slot
 from PySide6.QtGui import QGuiApplication
 
-from fluentui.Singleton import Singleton
 from app.utils.logger import get_logger
 from app.utils.common import get_app_data_dir
 
 logger = get_logger()
 
-@Singleton
+# Simple singleton pattern
+_stats_instance = None
+
+def get_stats_instance():
+    global _stats_instance
+    if _stats_instance is None:
+        _stats_instance = UsageStats()
+    return _stats_instance
+
 class UsageStats(QObject):
     def __init__(self):
         super().__init__(QGuiApplication.instance())

@@ -8,13 +8,20 @@ import shutil
 from PySide6.QtCore import QObject, Slot, QSettings
 from PySide6.QtGui import QGuiApplication
 
-from fluentui.Singleton import Singleton
 from app.utils.logger import get_logger
 from app.utils.common import get_app_data_dir
 
 logger = get_logger()
 
-@Singleton
+# Simple singleton pattern
+_persistence_instance = None
+
+def get_persistence_instance():
+    global _persistence_instance
+    if _persistence_instance is None:
+        _persistence_instance = DisplayPersistence()
+    return _persistence_instance
+
 class DisplayPersistence(QObject):
     def __init__(self):
         super().__init__(QGuiApplication.instance())

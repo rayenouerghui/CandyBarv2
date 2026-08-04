@@ -356,7 +356,7 @@ class AudioEngine(QObject):
                     pygame.mixer.music.play()
                     logger.debug(f"Playing: {rel}")
 
-                    is_chime = os.path.basename(full) == "announcement_chime.mp3"
+                    is_chime = os.path.basename(full) == "announcement.mp3"
                     start_time = time.time()
 
                     while pygame.mixer.music.get_busy():
@@ -393,9 +393,9 @@ class AudioEngine(QObject):
         seq = []
 
         # 1. Custom chime first (if exists)
-        chime_path = os.path.join(self._data_dir, "announcement_chime.mp3")
+        chime_path = os.path.join(self._data_dir, "announcement.mp3")
         if os.path.isfile(chime_path):
-            seq.append("announcement_chime.mp3")
+            seq.append("announcement.mp3")
         else:
             logger.debug(f"Custom chime sound not found at {chime_path}")
 

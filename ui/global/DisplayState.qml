@@ -187,8 +187,8 @@ QtObject {
             var lt = p.load("layoutType", "Centered")
             layoutType = _validLayoutTypes.indexOf(lt) !== -1 ? lt : "Centered"
 
-            accentColor           = p.load("accentColor", "#FFB84D")
-            accentGradientEnabled    = p.load("accentGradientEnabled", "false") === "true"
+            accentColor           = p.load("accentColor", "#8D6E63")
+            accentGradientEnabled    = p.load("accentGradientEnabled", "true") === "true"
 
             var agd = p.load("accentGradientDirection", "top-to-bottom")
             accentGradientDirection = _validGradientDirections.indexOf(agd) !== -1 ? agd : "top-to-bottom"
@@ -199,21 +199,21 @@ QtObject {
             facilityName          = p.load("facilityName", "CandyBar Service Centre")
             category              = p.load("category", "A")
             categoryDisplayName   = p.load("categoryDisplayName", "Category A")
-            categoryVisible       = p.load("categoryVisible", "true") !== "false"
-            categoryAudioEnabled  = p.load("categoryAudioEnabled", "true") !== "false"
-            logoPosition          = p.load("logoPosition", "top-left")
+            categoryVisible       = p.load("categoryVisible", "false") !== "false"
+            categoryAudioEnabled  = p.load("categoryAudioEnabled", "false") !== "false"
+            logoPosition          = p.load("logoPosition", "top-center")
             bannerEnabled         = p.load("bannerEnabled", "true") !== "false"
-            logoVisible           = p.load("logoVisible", "true") !== "false"
+            logoVisible           = p.load("logoVisible", "false") !== "false"
             facilityVisible       = p.load("facilityVisible", "true") !== "false"
 
             numberFont            = p.load("numberFont", "DM Mono")
-            categoryFont          = p.load("categoryFont", "LC Mogi")
+            categoryFont          = p.load("categoryFont", "Barriecito")
             facilityFont          = p.load("facilityFont", "Manosque")
             bannerFont            = p.load("bannerFont", "Manosque")
             nowServingFont        = p.load("nowServingFont", "Barriecito")
 
-            var ttsl = p.load("ttsLanguage", "en")
-            ttsLanguage = _validLanguages.indexOf(ttsl) !== -1 ? ttsl : "en"
+            var ttsl = p.load("ttsLanguage", "fr")
+            ttsLanguage = _validLanguages.indexOf(ttsl) !== -1 ? ttsl : "fr"
 
             ttsEnabled            = p.load("ttsEnabled", "true") !== "false"
 
@@ -222,71 +222,71 @@ QtObject {
 
             audioMuted            = p.load("audioMuted", "false") === "true"
 
-            var avs = parseInt(p.load("audioVolumeStep", "3"))
-            audioVolumeStep = !isNaN(avs) ? avs : 3
+            var avs = parseInt(p.load("audioVolumeStep", "4"))
+            audioVolumeStep = !isNaN(avs) ? avs : 4
 
             var fs                = parseInt(p.load("fontSize", "96"))
             fontSize              = (!isNaN(fs) && fs >= 48 && fs <= 200) ? fs : 96
 
-            var nfs = parseInt(p.load("numberFontSize", fontSize))
-            numberFontSize = !isNaN(nfs) ? nfs : fontSize
+            var nfs = parseInt(p.load("numberFontSize", "315"))
+            numberFontSize = !isNaN(nfs) ? nfs : 315
 
-            var cfs = parseInt(p.load("categoryFontSize", 120))
-            categoryFontSize = !isNaN(cfs) ? cfs : 120
+            var cfs = parseInt(p.load("categoryFontSize", 51))
+            categoryFontSize = !isNaN(cfs) ? cfs : 51
 
-            var ffs = parseInt(p.load("facilityFontSize", 120))
-            facilityFontSize = !isNaN(ffs) ? ffs : 120
+            var ffs = parseInt(p.load("facilityFontSize", 61))
+            facilityFontSize = !isNaN(ffs) ? ffs : 61
 
-            var bfs = parseInt(p.load("bannerFontSize", 120))
-            bannerFontSize = !isNaN(bfs) ? bfs : 120
+            var bfs = parseInt(p.load("bannerFontSize", 41))
+            bannerFontSize = !isNaN(bfs) ? bfs : 41
 
-            var sfs = parseInt(p.load("nowServingFontSize", 120))
-            nowServingFontSize = !isNaN(sfs) ? sfs : 120
+            var sfs = parseInt(p.load("nowServingFontSize", 38))
+            nowServingFontSize = !isNaN(sfs) ? sfs : 38
 
             // Per-element colors — must be loaded, previously missing entirely.
-            var nc = p.load("numberColor", accentColor.toString())
-            numberColor = _isValidColorValue(nc) ? nc : accentColor
+            var nc = p.load("numberColor", "#ff0000")
+            numberColor = _isValidColorValue(nc) ? nc : "#ff0000"
 
-            var cc = p.load("categoryColor", accentColor.toString())
-            categoryColor = _isValidColorValue(cc) ? cc : accentColor
+            var cc = p.load("categoryColor", "#ffffff")
+            categoryColor = _isValidColorValue(cc) ? cc : "#ffffff"
 
-            var fc = p.load("facilityColor", accentColor.toString())
-            facilityColor = _isValidColorValue(fc) ? fc : accentColor
+            var fc = p.load("facilityColor", "#ffffff")
+            facilityColor = _isValidColorValue(fc) ? fc : "#ffffff"
 
-            var bc = p.load("bannerColor", "#FFFFFF")
-            bannerColor = _isValidColorValue(bc) ? bc : "#FFFFFF"
+            var bc = p.load("bannerColor", "#ffffff")
+            bannerColor = _isValidColorValue(bc) ? bc : "#ffffff"
 
-            var nsc = p.load("nowServingColor", "#FFFFFF")
-            nowServingColor = _isValidColorValue(nsc) ? nsc : "#FFFFFF"
+            var nsc = p.load("nowServingColor", "#ffffff")
+            nowServingColor = _isValidColorValue(nsc) ? nsc : "#ffffff"
 
-            var ls                = parseInt(p.load("logoSize", "48"))
-            logoSize              = (!isNaN(ls) && ls >= 24 && ls <= 120) ? ls : 48
+            var ls                = parseInt(p.load("logoSize", "78"))
+            logoSize              = (!isNaN(ls) && ls >= 24 && ls <= 120) ? ls : 78
 
             var lp                = p.logo_path()
             if (lp && lp.length > 0)
                 logoSource = "file://" + lp
 
-            backgroundImage       = _bgSource(p.load("backgroundImage", "qrc:/app/res/image/ff_burger_pattern.jpg"))
+            backgroundImage       = _bgSource(p.load("backgroundImage", ""))
 
             var bfm = p.load("backgroundFitMode", "crop")
             backgroundFitMode = _validBackgroundFitModes.indexOf(bfm) !== -1 ? bfm : "crop"
 
-            var bs = parseFloat(p.load("backgroundScale", "1.0"))
-            backgroundScale = !isNaN(bs) ? bs : 1.0
+            var bsv = parseFloat(p.load("backgroundScale", "1.0"))
+            backgroundScale = !isNaN(bsv) ? bsv : 1.0
 
-            var bx = parseInt(p.load("backgroundOffsetX", "0"))
-            backgroundOffsetX = !isNaN(bx) ? bx : 0
+            var bxv = parseInt(p.load("backgroundOffsetX", "0"))
+            backgroundOffsetX = !isNaN(bxv) ? bxv : 0
 
-            var by = parseInt(p.load("backgroundOffsetY", "0"))
-            backgroundOffsetY = !isNaN(by) ? by : 0
+            var byv = parseInt(p.load("backgroundOffsetY", "0"))
+            backgroundOffsetY = !isNaN(byv) ? byv : 0
 
             var bo = p.load("backgroundOrientation", "portrait")
             backgroundOrientation = _validBackgroundOrientations.indexOf(bo) !== -1 ? bo : "portrait"
 
-            var bt = p.load("backgroundType", "image")
-            backgroundType = _validBackgroundTypes.indexOf(bt) !== -1 ? bt : "image"
+            var bt = p.load("backgroundType", "video")
+            backgroundType = _validBackgroundTypes.indexOf(bt) !== -1 ? bt : "video"
 
-            backgroundVideoSource = _videoSource(p.load("backgroundVideoSource", ""))
+            backgroundVideoSource = _videoSource(p.load("backgroundVideoSource", "http://192.168.1.14:8080/videos/wood.mp4"))
 
             _syncAudioEngine()
         } catch (e) {

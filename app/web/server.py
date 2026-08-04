@@ -275,47 +275,52 @@ def create_handler(upload_dir, mqtt_client, display_persistence, usage_stats, fo
                 usage_stats.reset_stats()
                 logger.info("[api] reset_stats called - reset all display settings and stats, applying Burger Joint template")
                 
-                # Apply Burger Joint template but preserve number and category
-                burger_defaults = [
+                # Apply current display settings as defaults (based on user's preferred configuration)
+                current_defaults = [
                     ("nextUp", ""),
                     ("layoutType", "Centered"),
-                    ("accentColor", "#E8372A"),
-                    ("accentGradientEnabled", "false"),
+                    ("accentColor", "#8D6E63"),
+                    ("accentGradientEnabled", "true"),
                     ("bannerText", "Welcome — please wait for your number to be called"),
                     ("bannerEnabled", "true"),
                     ("facilityName", "CandyBar Service Centre"),
-                    ("fontSize", "120"),
-                    ("numberFontSize", "120"),
-                    ("categoryFontSize", "60"),
-                    ("facilityFontSize", "60"),
-                    ("bannerFontSize", "60"),
-                    ("nowServingFontSize", "60"),
-                    ("logoSize", "48"),
-                    ("logoVisible", "true"),
-                    ("logoPosition", "top-left"),
+                    ("fontSize", "96"),
+                    ("numberFontSize", "315"),
+                    ("categoryFontSize", "51"),
+                    ("facilityFontSize", "61"),
+                    ("bannerFontSize", "41"),
+                    ("nowServingFontSize", "38"),
+                    ("logoSize", "78"),
+                    ("logoVisible", "false"),
+                    ("logoPosition", "top-center"),
                     ("facilityVisible", "true"),
-                    ("backgroundImage", "qrc:/app/res/image/ff_burger_pattern.jpg"),
+                    ("categoryVisible", "false"),
+                    ("backgroundImage", ""),
                     ("backgroundFitMode", "crop"),
                     ("backgroundScale", "1.0"),
                     ("backgroundOffsetX", "0"),
                     ("backgroundOffsetY", "0"),
                     ("backgroundOrientation", "portrait"),
-                    ("backgroundType", "image"),
-                    ("backgroundVideoSource", ""),
-                    ("ttsLanguage", "en"),
+                    ("backgroundType", "video"),
+                    ("backgroundVideoSource", "http://192.168.1.14:8080/videos/wood.mp4"),
+                    ("ttsLanguage", "fr"),
                     ("displayLanguage", "en"),
                     ("ttsEnabled", "true"),
                     ("audioMuted", "false"),
-                    ("audioVolumeStep", "3"),
+                    ("audioVolumeStep", "4"),
+                    ("categoryAudioEnabled", "false"),
                     ("numberFont", "DM Mono"),
-                    ("numberColor", "#E8372A"),
-                    ("categoryColor", "#E8372A"),
-                    ("facilityColor", "#E8372A"),
-                    ("bannerColor", "#FFFFFF"),
-                    ("nowServingColor", "#FFFFFF"),
+                    ("numberColor", "#ff0000"),
+                    ("categoryFont", "Barriecito"),
+                    ("categoryColor", "#ffffff"),
+                    ("facilityFont", "Manosque"),
+                    ("facilityColor", "#ffffff"),
+                    ("bannerColor", "#ffffff"),
+                    ("nowServingFont", "Barriecito"),
+                    ("nowServingColor", "#ffffff"),
                 ]
                 
-                for key, value in burger_defaults:
+                for key, value in current_defaults:
                     self._persist_and_publish(key, value)
                 
                 # Restore preserved number and category

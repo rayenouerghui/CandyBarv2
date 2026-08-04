@@ -117,12 +117,36 @@ class AudioEngine(QObject):
             logger.warning("pygame not installed — audio disabled")
             return
         try:
+            # Try multiple audio configurations for VM compatibility
+            # First try default
             pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
             self._initialized = True
-            logger.info("Audio mixer initialized OK")
+            logger.info("Audio mixer initialized OK (44100Hz, stereo)")
         except Exception as e:
-            self._initialized = False
-            logger.error(f"Failed to initialize audio: {e}", exc_info=True)
+            logger.warning(f"Failed to init audio with 44100Hz stereo: {e}")
+            try:
+                # Try with smaller buffer
+                pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=1024)
+                self._initialized = True
+                logger.info("Audio mixer initialized OK (44100Hz, stereo, larger buffer)")
+            except Exception as e2:
+                logger.warning(f"Failed to init audio with larger buffer: {e2}")
+                try:
+                    # Try mono
+                    pygame.mixer.init(frequency=44100, size=-16, channels=1, buffer=1024)
+                    self._initialized = True
+                    logger.info("Audio mixer initialized OK (44100Hz, mono)")
+                except Exception as e3:
+                    logger.warning(f"Failed to init audio with mono: {e3}")
+                    try:
+                        # Try with dummy audio driver (for headless/VM environments)
+                        os.environ['SDL_AUDIODRIVER'] = 'dummy'
+                        pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
+                        self._initialized = True
+                        logger.warning("Audio mixer initialized with DUMMY driver (no actual audio output)")
+                    except Exception as e4:
+                        self._initialized = False
+                        logger.error(f"Failed to initialize audio with all attempts: {e4}", exc_info=True)
 
     def _ensure_mixer_ready(self) -> bool:
         """Retry init once if a previous attempt failed (e.g. audio device
@@ -314,6 +338,7 @@ class AudioEngine(QObject):
             if not files:
                 logger.warning(f"Empty sequence for number '{number}'")
                 return
+            logger.info(f"Playing announcement for number '{number}', sequence: {files}")
             vol = self.VOLUME_STEPS[self._volume_step]
             gap = self.SEQUENCE_GAP_SECONDS
             for rel in files:
@@ -325,9 +350,11 @@ class AudioEngine(QObject):
                     logger.warning(f"Missing audio atom: {full}")
                     continue
                 try:
+                    logger.debug(f"Loading audio file: {full}")
                     pygame.mixer.music.load(full)
                     pygame.mixer.music.set_volume(vol)
                     pygame.mixer.music.play()
+                    logger.debug(f"Playing: {rel}")
 
                     is_chime = os.path.basename(full) == "announcement_chime.mp3"
                     start_time = time.time()
@@ -342,6 +369,7 @@ class AudioEngine(QObject):
                             break
                         time.sleep(0.01)
 
+                    logger.debug(f"Finished playing: {rel}")
                     if interrupted:
                         break
                     time.sleep(gap)

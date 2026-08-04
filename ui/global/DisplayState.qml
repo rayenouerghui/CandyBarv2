@@ -266,7 +266,7 @@ QtObject {
             if (lp && lp.length > 0)
                 logoSource = "file://" + lp
 
-            backgroundImage       = _bgSource(p.load("backgroundImage", ""))
+            backgroundImage       = _bgSource(p.load("backgroundImage", "qrc:/app/res/image/pro_geometric.jpg"))
 
             var bfm = p.load("backgroundFitMode", "crop")
             backgroundFitMode = _validBackgroundFitModes.indexOf(bfm) !== -1 ? bfm : "crop"
@@ -283,10 +283,10 @@ QtObject {
             var bo = p.load("backgroundOrientation", "portrait")
             backgroundOrientation = _validBackgroundOrientations.indexOf(bo) !== -1 ? bo : "portrait"
 
-            var bt = p.load("backgroundType", "video")
-            backgroundType = _validBackgroundTypes.indexOf(bt) !== -1 ? bt : "video"
+            var bt = p.load("backgroundType", "image")
+            backgroundType = _validBackgroundTypes.indexOf(bt) !== -1 ? bt : "image"
 
-            backgroundVideoSource = _videoSource(p.load("backgroundVideoSource", "http://192.168.1.14:8080/videos/wood.mp4"))
+            backgroundVideoSource = _videoSource(p.load("backgroundVideoSource", ""))
 
             _syncAudioEngine()
         } catch (e) {

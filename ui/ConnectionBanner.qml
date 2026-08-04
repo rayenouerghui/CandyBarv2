@@ -17,12 +17,6 @@ Item {
     height: pill.height
 
     opacity: visible ? 1 : 0
-    Behavior on opacity {
-        NumberAnimation {
-            duration: visible ? root.dur_std : root.dur_micro
-            easing.type: visible ? Easing.OutCubic : Easing.InCubic
-        }
-    }
 
     Rectangle {
         id: pill

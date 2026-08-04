@@ -308,7 +308,7 @@ Item {
                                 id: split_ticker_anim
                                 from: 0; to: -(ticker_row_split.width / 3)
                                 duration: 14000; loops: Animation.Infinite
-                                running: true; easing.type: Easing.Linear
+                                running: false; easing.type: Easing.Linear
                             }
                         }
                     }
@@ -433,7 +433,7 @@ Item {
                     id: centered_ticker_anim
                     from: 0; to: -(ticker_row_centered.width / 3)
                     duration: 16000; loops: Animation.Infinite
-                    running: true; easing.type: Easing.Linear
+                    running: false; easing.type: Easing.Linear
                 }
             }
         }

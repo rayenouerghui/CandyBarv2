@@ -51,6 +51,5 @@ Item {
             GradientStop { position: 0.0; color: underlineRoot.accentColor }
             GradientStop { position: 1.0; color: Qt.rgba(underlineRoot.accentColor.r, underlineRoot.accentColor.g, underlineRoot.accentColor.b, 0.35) }
         }
-        Behavior on color { ColorAnimation { duration: 600 } }
     }
 }

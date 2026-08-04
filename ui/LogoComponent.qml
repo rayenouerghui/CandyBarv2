@@ -48,7 +48,6 @@ Item {
         color: Qt.rgba(DisplayState.accentColor.r,
                        DisplayState.accentColor.g,
                        DisplayState.accentColor.b, 0.15)
-        Behavior on color { ColorAnimation { duration: 600 } }
 
         // Load image to get natural aspect ratio
         Image {

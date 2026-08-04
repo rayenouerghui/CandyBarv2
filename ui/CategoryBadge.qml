@@ -32,7 +32,6 @@ Item {
             anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
             width: 6
             color: badgeRoot.accentColor
-            Behavior on color { ColorAnimation { duration: 600 } }
         }
     }
 
@@ -51,7 +50,6 @@ Item {
             height: 10
             radius: 5
             color: badgeRoot.accentColor
-            Behavior on color { ColorAnimation { duration: 600 } }
         }
 
         Item {

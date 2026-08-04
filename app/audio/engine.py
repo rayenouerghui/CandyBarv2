@@ -231,7 +231,7 @@ class AudioEngine(QObject):
             return
         logger.info(f"Generating category audio for '{name}' (missing: {missing})")
         try:
-            from src.audio.category_helper import generate_category_audio
+            from app.audio.category_helper import generate_category_audio
             generate_category_audio(name, self._data_dir)
         except Exception as e:
             logger.error(f"Category audio generation failed: {e}", exc_info=True)

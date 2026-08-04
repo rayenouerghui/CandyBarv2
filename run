@@ -29,6 +29,7 @@ $PIP install -q -r requirements.txt
 # ── 3. Compile QRC resources ────────────────────────────────────
 if [ -f "$RCC" ]; then
     echo "[run] Compiling Qt resources..."
+    $RCC fluentui/imports/resource.qrc -o fluentui/imports/resource_rc.py
     $RCC resources/qrc/resource.qrc -o resources/qrc/resource_rc.py
 else
     echo "[run] Warning: pyside6-rcc not found in virtual environment, skipping compilation."

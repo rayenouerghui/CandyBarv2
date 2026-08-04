@@ -349,7 +349,7 @@ QtObject {
                 p.save("facilityName", value)
             } else if (key === "fontSize") {
                 var fs = parseInt(value)
-                if (!isNaN(fs) && fs >= 48 && fs <= 200) { fontSize = fs; numberFontSize = fs; p.save("fontSize", fs); p.save("numberFontSize", fs) }
+                if (!isNaN(fs) && fs >= 120 && fs <= 800) { fontSize = fs; numberFontSize = fs; p.save("fontSize", fs); p.save("numberFontSize", fs) }
                 else console.warn("DisplayState: ignored invalid fontSize:", value)
             } else if (key === "numberFontSize") {
                 var nfs = parseInt(value)
@@ -357,19 +357,19 @@ QtObject {
                 else console.warn("DisplayState: ignored invalid numberFontSize:", value)
             } else if (key === "categoryFontSize") {
                 var cfs = parseInt(value)
-                if (!isNaN(cfs) && cfs >= 120 && cfs <= 800) { categoryFontSize = cfs; p.save("categoryFontSize", cfs) }
+                if (!isNaN(cfs) && cfs >= 10 && cfs <= 200) { categoryFontSize = cfs; p.save("categoryFontSize", cfs) }
                 else console.warn("DisplayState: ignored invalid categoryFontSize:", value)
             } else if (key === "facilityFontSize") {
                 var ffs = parseInt(value)
-                if (!isNaN(ffs) && ffs >= 120 && ffs <= 800) { facilityFontSize = ffs; p.save("facilityFontSize", ffs) }
+                if (!isNaN(ffs) && ffs >= 10 && ffs <= 200) { facilityFontSize = ffs; p.save("facilityFontSize", ffs) }
                 else console.warn("DisplayState: ignored invalid facilityFontSize:", value)
             } else if (key === "bannerFontSize") {
                 var bfs = parseInt(value)
-                if (!isNaN(bfs) && bfs >= 120 && bfs <= 800) { bannerFontSize = bfs; p.save("bannerFontSize", bfs) }
+                if (!isNaN(bfs) && bfs >= 10 && bfs <= 200) { bannerFontSize = bfs; p.save("bannerFontSize", bfs) }
                 else console.warn("DisplayState: ignored invalid bannerFontSize:", value)
             } else if (key === "nowServingFontSize") {
                 var sfs = parseInt(value)
-                if (!isNaN(sfs) && sfs >= 120 && sfs <= 800) { nowServingFontSize = sfs; p.save("nowServingFontSize", sfs) }
+                if (!isNaN(sfs) && sfs >= 10 && sfs <= 200) { nowServingFontSize = sfs; p.save("nowServingFontSize", sfs) }
                 else console.warn("DisplayState: ignored invalid nowServingFontSize:", value)
             } else if (key === "logoSize") {
                 var ls = parseInt(value)

@@ -113,12 +113,12 @@ class DisplayPersistence(QObject):
         return str(self.load("facilityName", "CandyBar Service Centre"))
 
     def get_font_size(self) -> int:
-        v = self.load("fontSize", 96)
+        v = self.load("fontSize", 120)
         try:
             fs = int(v)
-            return fs if 48 <= fs <= 200 else 96
+            return fs if 120 <= fs <= 800 else 120
         except (TypeError, ValueError):
-            return 96
+            return 120
 
     def get_logo_size(self) -> int:
         v = self.load("logoSize", 48)
@@ -132,7 +132,7 @@ class DisplayPersistence(QObject):
         v = self.load(key, default)
         try:
             val = int(v)
-            return val if 120 <= val <= 800 else default
+            return val if 10 <= val <= 200 else default
         except (TypeError, ValueError):
             return default
 

@@ -6,6 +6,7 @@ Item {
     id: logoRoot
     property real baseSize: DisplayState.logoSize
     property real layoutMult: 1.0
+    property real logoBottom: logoContainer.y + logoContainer.height
 
     visible: DisplayState.logoVisible && DisplayState.logoPosition !== "hidden"
     opacity: visible ? 1 : 0

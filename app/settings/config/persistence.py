@@ -56,13 +56,31 @@ class DisplayPersistence(QObject):
 
     @Slot(result=str)
     def logo_path(self) -> str:
-        return self.load("logoPath", "")
+        rel_path = self.load("logoPath", "")
+        if not rel_path:
+            return ""
+        # If it's already an absolute path, return it
+        if os.path.isabs(rel_path):
+            return rel_path
+        # Convert relative path to absolute path using data directory
+        data_dir = get_app_data_dir()
+        abs_path = os.path.join(data_dir, rel_path)
+        return abs_path if os.path.isfile(abs_path) else ""
 
     def background_path(self) -> str:
-        bg = self.load("backgroundImage", "")
-        if bg and not bg.startswith("qrc:") and os.path.isfile(bg):
-            return bg
-        return bg
+        rel_path = self.load("backgroundImage", "")
+        if not rel_path:
+            return ""
+        # If it's a qrc path, return as-is
+        if rel_path.startswith("qrc:"):
+            return rel_path
+        # If it's already an absolute path, return it
+        if os.path.isabs(rel_path):
+            return rel_path if os.path.isfile(rel_path) else rel_path
+        # Convert relative path to absolute path using data directory
+        data_dir = get_app_data_dir()
+        abs_path = os.path.join(data_dir, rel_path)
+        return abs_path if os.path.isfile(abs_path) else rel_path
 
     @Slot(result=str)
     def get_pin(self) -> str:
@@ -114,13 +132,13 @@ class DisplayPersistence(QObject):
         v = self.load(key, default)
         try:
             val = int(v)
-            return val if 8 <= val <= 240 else default
+            return val if 120 <= val <= 800 else default
         except (TypeError, ValueError):
             return default
 
     def get_display_language(self) -> str:
         v = str(self.load("displayLanguage", "en"))
-        return v if v in ("en", "fr", "ar") else "en"
+        return v if v in ("en", "fr") else "en"
 
     def reset_all(self) -> None:
         """Reset all display settings to defaults."""

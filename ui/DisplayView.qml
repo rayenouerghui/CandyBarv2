@@ -4,8 +4,8 @@ import FluentUI 1.0
 import "global"
 
 // ── DisplayView ──────────────────────────────────────────────────────────
-// The permanent, always-on display. Hosts Classic, Split, and Centered layouts.
-// All three stay in the tree; opacity crossfade switches between them.
+// The permanent, always-on display. Hosts Split and Centered layouts.
+// Both stay in the tree; opacity crossfade switches between them.
 //
 // Hierarchy (3-meter read test, highest to lowest):
 //   1. NUMBER        — commands the screen, heaviest weight, largest size
@@ -31,12 +31,6 @@ import "global"
 Item {
     id: root
     anchors.fill: parent
-
-    // RTL mirroring — automatically mirrors Row/RowLayout children when
-    // displayLanguage is Arabic. Individual text items use their own
-    // horizontal alignment so they are unaffected by mirroring.
-    LayoutMirroring.enabled:  DisplayState.isRtl
-    LayoutMirroring.childrenInherit: true
 
     // ── Timing constants ─────────────────────────────────────────────────
     readonly property int dur_micro: 150   // number exit
@@ -169,19 +163,19 @@ Item {
     // ── Layout crossfade controller ──────────────────────────────────────
     property real _splitOpacity:    0
     property real _centeredOpacity: 1
-    property real _topOpacity:      0
 
     Behavior on _splitOpacity    { NumberAnimation { duration: dur_full; easing.type: Easing.OutCubic } }
     Behavior on _centeredOpacity { NumberAnimation { duration: dur_full; easing.type: Easing.OutCubic } }
-    Behavior on _topOpacity      { NumberAnimation { duration: dur_full; easing.type: Easing.OutCubic } }
 
     function _applyLayout(lt) {
-         _splitOpacity    = (lt === "Split")    ? 1 : 0
-         _centeredOpacity = (lt === "Centered") ? 1 : 0
-         _topOpacity      = (lt === "Top")      ? 1 : 0
-         if (lt === "Split"    && split_ticker_anim)    split_ticker_anim.restart()
-         if (lt === "Top"      && top_ticker_anim)      top_ticker_anim.restart()
-         if (lt === "Centered" && centered_ticker_anim) centered_ticker_anim.restart()
+         var known = (lt === "Split" || lt === "Centered")
+         var safeLt = known ? lt : "Centered"   // never render a blank screen
+         if (!known) console.warn("DisplayView: unknown layoutType, falling back to Centered:", lt)
+
+         _splitOpacity    = (safeLt === "Split")    ? 1 : 0
+         _centeredOpacity = (safeLt === "Centered") ? 1 : 0
+         if (safeLt === "Split"    && split_ticker_anim)    split_ticker_anim.restart()
+         if (safeLt === "Centered" && centered_ticker_anim) centered_ticker_anim.restart()
     }
 
     Connections {
@@ -209,6 +203,7 @@ Item {
 
         // Logo — positioned absolutely based on logoPosition (full width)
         LogoComponent {
+            id: splitLogo
             baseSize: DisplayState.logoSize
             layoutMult: 1.0
         }
@@ -230,7 +225,7 @@ Item {
                 ColumnLayout {
                     id: split_content_col
                     anchors.centerIn: parent
-                    anchors.verticalCenterOffset: root.numOpticalLift
+                    anchors.verticalCenterOffset: root.numOpticalLift + (splitLogo.visible ? splitLogo.logoBottom / 2 + Math.max(root.height * 0.02, 12) : 0)
                     spacing: 0
 
                     // Whisper
@@ -277,7 +272,8 @@ Item {
                         font.pixelSize: Math.max(DisplayState.facilityFontSize || Math.max(root.height * 0.022, 10), 10)
                         font.weight: Font.Light
                         color: DisplayState.facilityColor
-                        opacity: 1.0
+                        opacity: DisplayState.facilityVisible ? 1.0 : 0.0
+                        visible: DisplayState.facilityVisible
                         style: Text.Raised
                         styleColor: Qt.rgba(0, 0, 0, 0.5)
                     }
@@ -388,136 +384,6 @@ Item {
     }
 
     // ════════════════════════════════════════════════════════════════════
-    // TOP LAYOUT
-    // A simple top-aligned layout so the Top option always renders a
-    // visible stack instead of leaving only the background on screen.
-    // ════════════════════════════════════════════════════════════════════
-   Item {
-    id: top_layout
-    anchors.fill: parent
-    opacity: root._topOpacity
-    visible: opacity > 0
-    onVisibleChanged: {
-        if (visible && top_ticker_anim) top_ticker_anim.restart()
-    }
-
-    LogoComponent {
-        baseSize: DisplayState.logoSize
-        layoutMult: 0.9
-    }
-
-    // ── Header strip — label + category side-by-side, NOT stacked ──────
-    // This is what makes Top structurally different from Centered: instead
-    // of a vertical stack, the secondary info is compressed into one slim
-    // horizontal row, freeing almost the whole screen for the number.
-    RowLayout {
-        id: top_header_row
-        anchors {
-            top: parent.top
-            horizontalCenter: parent.horizontalCenter
-            topMargin: Math.max(root.height * 0.05, 20)
-        }
-        spacing: Math.max(root.width * 0.03, 20)
-
-        NowServingLabel {}
-
-        CategoryBadge {
-            numPx: DisplayState.fontSize * root.numScale * root.numLayoutTop
-            catScale: root.catScaleTop
-        }
-    }
-
-    // ── Hero number — fills essentially the whole remaining screen ─────
-    Item {
-        id: top_hero_area
-        anchors {
-            top: top_header_row.bottom
-            left: parent.left
-            right: parent.right
-            bottom: top_facility_text.top
-        }
-
-        ColumnLayout {
-            anchors.centerIn: parent
-            spacing: 0
-
-            ServingNumber {
-                layoutMult: root.numLayoutTop
-                numScale: root.numScale
-                shownNumber: root._shownNumber
-                rootOpacity: root._numOpacity
-                rootScale: root._numScale
-                rootTranslateY: root._numTranslateY
-                Layout.alignment: Qt.AlignHCenter
-                Layout.bottomMargin: Math.max(root.height * 0.02, 12)
-            }
-
-            AccentUnderline {
-                layoutMult: root.numLayoutTop
-                numScale: root.numScale
-                rootOpacity: root._numOpacity
-                rootScale: root._numScale
-                rootTranslateY: root._numTranslateY
-                Layout.alignment: Qt.AlignHCenter
-            }
-        }
-    }
-
-    Text {
-        id: top_facility_text
-        anchors {
-            bottom: top_banner.top
-            horizontalCenter: parent.horizontalCenter
-            bottomMargin: Math.max(root.height * 0.014, 8)
-        }
-        text: DisplayState.facilityName
-        font.family: DisplayState.facilityFont || DisplayState.numberFont
-        font.pixelSize: Math.max(DisplayState.facilityFontSize || Math.max(root.height * 0.022, 10), 10)
-        font.weight: Font.Light
-        color: DisplayState.facilityColor
-        style: Text.Raised
-        styleColor: Qt.rgba(0, 0, 0, 0.5)
-    }
-
-    Rectangle {
-        id: top_banner
-        anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-        height: Math.max(root.height * 0.08, 36)
-        color: Qt.rgba(0, 0, 0, 0.42)
-        clip: true
-        visible: DisplayState.bannerEnabled
-        onWidthChanged: if (top_ticker_anim) top_ticker_anim.restart()
-
-        Row {
-            id: ticker_row_top
-            height: parent.height
-            spacing: 0
-            Repeater {
-                model: 3
-                Text {
-                    height: ticker_row_top.height
-                    verticalAlignment: Text.AlignVCenter
-                    text: DisplayState.bannerText + "   ·   "
-                    font.family: DisplayState.bannerFont || DisplayState.uiFont
-                    font.pixelSize: Math.max(DisplayState.bannerFontSize || Math.max(root.height * 0.023, 11), 11)
-                    font.weight: Font.DemiBold
-                    color: DisplayState.bannerColor
-                    opacity: 0.9
-                    style: Text.Raised
-                    styleColor: Qt.rgba(0, 0, 0, 0.6)
-                }
-            }
-            NumberAnimation on x {
-                id: top_ticker_anim
-                from: 0; to: -(ticker_row_top.width / 3)
-                duration: 16000; loops: Animation.Infinite
-                running: true; easing.type: Easing.Linear
-            }
-        }
-    }
-}
-
-    // ════════════════════════════════════════════════════════════════════
     // CENTERED LAYOUT
     // Pure minimal, on a glass card. Logo top, NowServingLabel,
     // CategoryBadge, Number, Underline, facility name. No header bar,
@@ -535,6 +401,7 @@ Item {
 
         // Logo — positioned absolutely based on logoPosition
         LogoComponent {
+            id: centeredLogo
             baseSize: DisplayState.logoSize
             layoutMult: 1.25
         }
@@ -543,7 +410,7 @@ Item {
         ColumnLayout {
             id: centered_content_col
             anchors.centerIn: parent
-            anchors.verticalCenterOffset: root.numOpticalLift
+            anchors.verticalCenterOffset: root.numOpticalLift + (centeredLogo.visible ? centeredLogo.logoBottom / 2 + Math.max(root.height * 0.02, 12) : 0)
             spacing: 0
 
             // Whisper
@@ -590,7 +457,8 @@ Item {
                 font.pixelSize: Math.max(DisplayState.facilityFontSize || Math.max(root.height * 0.022, 10), 10)
                 font.weight:    Font.Light
                 color:          DisplayState.facilityColor
-                opacity:        1.0
+                opacity:        DisplayState.facilityVisible ? 1.0 : 0.0
+                visible:        DisplayState.facilityVisible
                 style:          Text.Raised
                 styleColor:     Qt.rgba(0, 0, 0, 0.5)
             }

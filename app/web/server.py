@@ -189,12 +189,9 @@ def create_handler(upload_dir, mqtt_client, display_persistence, usage_stats, fo
                 font_name = path[len("/fonts/"):]
                 allowed_fonts = {
                     "Barriecito-Regular.ttf": ":/app/res/font/Barriecito-Regular.ttf",
-                    "DTGetaiGroteskDisplay-Black.otf": ":/app/res/font/DTGetaiGroteskDisplay-Black.otf",
                     "Gluten-Regular.ttf": ":/app/res/font/Gluten-Regular.ttf",
                     "LCMogi-A.otf": ":/app/res/font/LCMogi-A.otf",
                     "Manosque-Regular.otf": ":/app/res/font/Manosque-Regular.otf",
-                    "FunPlayArabic_DEMO-Bold.otf": os.path.join(PROJECT_ROOT, "FunPlayArabic_DEMO-Bold.otf"),
-                    "TintaArabic-Bold.otf": os.path.join(PROJECT_ROOT, "TintaArabic-Bold.otf"),
                 }
                 if font_name in allowed_fonts:
                     mime = "font/otf" if font_name.endswith(".otf") else "font/ttf"
@@ -287,15 +284,16 @@ def create_handler(upload_dir, mqtt_client, display_persistence, usage_stats, fo
                     ("bannerText", "Welcome — please wait for your number to be called"),
                     ("bannerEnabled", "true"),
                     ("facilityName", "CandyBar Service Centre"),
-                    ("fontSize", "96"),
-                    ("numberFontSize", "96"),
-                    ("categoryFontSize", "34"),
-                    ("facilityFontSize", "24"),
-                    ("bannerFontSize", "24"),
-                    ("nowServingFontSize", "16"),
+                    ("fontSize", "120"),
+                    ("numberFontSize", "120"),
+                    ("categoryFontSize", "120"),
+                    ("facilityFontSize", "120"),
+                    ("bannerFontSize", "120"),
+                    ("nowServingFontSize", "120"),
                     ("logoSize", "48"),
                     ("logoVisible", "true"),
                     ("logoPosition", "top-left"),
+                    ("facilityVisible", "true"),
                     ("backgroundImage", "qrc:/app/res/image/ff_burger_pattern.jpg"),
                     ("backgroundFitMode", "crop"),
                     ("backgroundScale", "1.0"),
@@ -509,11 +507,17 @@ def create_handler(upload_dir, mqtt_client, display_persistence, usage_stats, fo
                     f.write(processed_data)
                 category = display_persistence.load("category", "A")
                 if field == "logo":
-                    display_persistence.save("logoPath", dest_path)
+                    # Store relative path for portability
+                    rel_path = f"{field}{ext}"
+                    display_persistence.save("logoPath", rel_path)
+                    # Send absolute path via MQTT for QML to use
                     mqtt_client.direct_command("logoSource", dest_path)
                     mqtt_client.publish(f"display/{category}/logoSource", dest_path)
                 else:
-                    display_persistence.save("backgroundImage", dest_path)
+                    # Store relative path for portability
+                    rel_path = f"{field}{ext}"
+                    display_persistence.save("backgroundImage", rel_path)
+                    # Send absolute path via MQTT for QML to use
                     mqtt_client.direct_command("backgroundImage", dest_path)
                     mqtt_client.publish(f"display/{category}/backgroundImage", dest_path)
                 self._json_response({"ok": True, "url": f"/uploads/{field}{ext}", "path": dest_path})
@@ -557,7 +561,6 @@ def create_handler(upload_dir, mqtt_client, display_persistence, usage_stats, fo
             try:
                 fonts = [
                     {"family": "Barriecito", "url": "/fonts/Barriecito-Regular.ttf", "filename": "Barriecito-Regular.ttf"},
-                    {"family": "DT Getai Grotesk Display Black", "url": "/fonts/DTGetaiGroteskDisplay-Black.otf", "filename": "DTGetaiGroteskDisplay-Black.otf"},
                     {"family": "Gluten", "url": "/fonts/Gluten-Regular.ttf", "filename": "Gluten-Regular.ttf"},
                     {"family": "LC Mogi", "url": "/fonts/LCMogi-A.otf", "filename": "LCMogi-A.otf"},
                     {"family": "Manosque", "url": "/fonts/Manosque-Regular.otf", "filename": "Manosque-Regular.otf"},
@@ -609,10 +612,10 @@ def create_handler(upload_dir, mqtt_client, display_persistence, usage_stats, fo
                     "facilityName":           p.get_facility(),
                     "fontSize":               p.get_font_size(),
                     "numberFontSize":         p.get_text_size("numberFontSize", p.get_font_size()),
-                    "categoryFontSize":       p.get_text_size("categoryFontSize", 34),
-                    "facilityFontSize":       p.get_text_size("facilityFontSize", 24),
-                    "bannerFontSize":         p.get_text_size("bannerFontSize", 24),
-                    "nowServingFontSize":     p.get_text_size("nowServingFontSize", 16),
+                    "categoryFontSize":       p.get_text_size("categoryFontSize", 120),
+                    "facilityFontSize":       p.get_text_size("facilityFontSize", 120),
+                    "bannerFontSize":         p.get_text_size("bannerFontSize", 120),
+                    "nowServingFontSize":     p.get_text_size("nowServingFontSize", 120),
                     "logoSize":               p.get_logo_size(),
                     "numberFont":             p.load("numberFont", "DM Mono"),
                     "categoryFont":           p.load("categoryFont", p.load("numberFont", "DM Mono")),
@@ -627,6 +630,7 @@ def create_handler(upload_dir, mqtt_client, display_persistence, usage_stats, fo
                     "logoUrl":                logo_url,
                     "logoVisible":            p.load("logoVisible", "true"),
                     "logoPosition":           p.load("logoPosition", "top-left"),
+                    "facilityVisible":        p.load("facilityVisible", "true"),
                     "backgroundImage":        bg_url,
                     "backgroundFitMode":     p.load("backgroundFitMode", "crop"),
                     "backgroundScale":       p.load("backgroundScale", "1.0"),
@@ -662,12 +666,12 @@ def create_handler(upload_dir, mqtt_client, display_persistence, usage_stats, fo
                     "bannerText": "Welcome — please wait for your number to be called",
                     "bannerEnabled": "true",
                     "facilityName": "CandyBar Service Centre",
-                    "fontSize": 96,
-                    "numberFontSize": 96,
-                    "categoryFontSize": 34,
-                    "facilityFontSize": 24,
-                    "bannerFontSize": 24,
-                    "nowServingFontSize": 16,
+                    "fontSize": 120,
+                    "numberFontSize": 120,
+                    "categoryFontSize": 120,
+                    "facilityFontSize": 120,
+                    "bannerFontSize": 120,
+                    "nowServingFontSize": 120,
                     "logoSize": 48,
                     "numberFont": "DM Mono",
                     "categoryFont": "DM Mono",
@@ -682,6 +686,7 @@ def create_handler(upload_dir, mqtt_client, display_persistence, usage_stats, fo
                     "logoUrl": "",
                     "logoVisible": "true",
                     "logoPosition": "top-left",
+                    "facilityVisible": "true",
                     "backgroundImage": "qrc:/app/res/image/ff_burger_pattern.jpg",
                     "backgroundFitMode": "crop",
                     "backgroundScale": "1.0",

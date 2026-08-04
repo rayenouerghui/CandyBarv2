@@ -11,12 +11,9 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
   <style>
     @font-face{font-family:'Barriecito';src:url('/fonts/Barriecito-Regular.ttf') format('truetype')}
-    @font-face{font-family:'DT Getai Grotesk Display Black';src:url('/fonts/DTGetaiGroteskDisplay-Black.otf') format('opentype')}
     @font-face{font-family:'Gluten';src:url('/fonts/Gluten-Regular.ttf') format('truetype')}
     @font-face{font-family:'LC Mogi';src:url('/fonts/LCMogi-A.otf') format('opentype')}
     @font-face{font-family:'Manosque';src:url('/fonts/Manosque-Regular.otf') format('opentype')}
-    @font-face{font-family:'Fun Play Arabic_DEMO';src:url('/fonts/FunPlayArabic_DEMO-Bold.otf') format('opentype')}
-    @font-face{font-family:'Tinta Arabic';src:url('/fonts/TintaArabic-Bold.otf') format('opentype')}
 
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
@@ -2091,7 +2088,7 @@
        value="1" onblur="prevNum()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"/>
         <button class="step-btn" onclick="adj(1)" style="display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
       </div>
-      <div style="font-size:14px;color:var(--text-secondary);text-align:center;font-weight:500;margin-top:12px">
+      <div id="rc_category_row" style="font-size:14px;color:var(--text-secondary);text-align:center;font-weight:500;margin-top:12px">
         Category: <span id="rc_code" style="display:none">A</span><span id="rc_name">Category A</span>
       </div>
       <button class="gi save-btn" style="margin-top:16px" onclick="adj(1)">Call Next</button>
@@ -2118,7 +2115,7 @@
   ===== SECTION ===== -->
   <div class="pane hide" id="p_settings">
 
-    <div class="card open">
+    <div class="card">
 
       <button class="acc-head" onclick="toggleCard(this)">
         <span class="acc-ic">🏷️</span>
@@ -2257,7 +2254,6 @@
         <div class="grp" id="disp_lang_grp">
           <button class="gi on" id="dl_en" data-lang="en" onclick="setDisplayLanguage('en')">🇬🇧 English</button>
           <button class="gi"    id="dl_fr" data-lang="fr" onclick="setDisplayLanguage('fr')">🇫🇷 Français</button>
-          <button class="gi"    id="dl_ar" data-lang="ar" onclick="setDisplayLanguage('ar')">🇸🇦 العربية</button>
         </div>
       </div>
     </div>
@@ -2312,7 +2308,7 @@
   </div>
 
   <!-- Live Metrics -->
-  <div class="card open">
+  <div class="card">
     <button class="acc-head" onclick="toggleCard(this)">
       <span class="acc-ic" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--primary)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -2403,7 +2399,7 @@
   <div class="pane hide" id="p_theme">
 
     <!-- Templates -->
-    <div class="card open">
+    <div class="card">
       <button class="acc-head" onclick="toggleCard(this)">
         <span class="acc-ic" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--primary)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
         <span class="acc-t"><b>Ready-made templates</b><small>One tap sets colors, background &amp; font</small></span>
@@ -2443,14 +2439,6 @@
               <rect x="10" y="13" width="28" height="10" rx="2" fill="rgba(255,255,255,.30)"/>
               <rect x="16" y="25" width="16" height="3" rx="1" fill="rgba(255,255,255,.14)"/>
             </svg><span>Centered</span>
-          </div>
-          <div class="lay-thumb" id="lay_Top" onclick="setLayout('Top')">
-            <svg width="48" height="30" viewBox="0 0 48 30" fill="none">
-              <rect width="48" height="30" rx="3" fill="rgba(255,255,255,.05)"/>
-              <rect x="18" y="3" width="12" height="6" rx="2" fill="rgba(255,255,255,.18)"/>
-              <rect x="12" y="11" width="24" height="8" rx="2" fill="rgba(255,255,255,.30)"/>
-              <rect x="16" y="21" width="16" height="3" rx="1" fill="rgba(255,255,255,.14)"/>
-            </svg><span>Top</span>
           </div>
         </div>
       </div>
@@ -2554,7 +2542,6 @@
           <select id="font_family_select" onchange="setFontFamily(this.value)">
             <option value="DM Mono">DM Mono</option>
             <option value="Barriecito">Barriecito</option>
-            <option value="DT Getai Grotesk Display Black">DT Getai Grotesk Display Black</option>
             <option value="Gluten">Gluten</option>
             <option value="LC Mogi">LC Mogi</option>
             <option value="Manosque">Manosque</option>
@@ -2567,7 +2554,7 @@
             <span class="slider-lbl">Size</span>
             <span class="slider-val" id="font_size_val">96px</span>
           </div>
-          <input type="range" id="font_size_slider" min="8" max="240" step="1" value="96"
+          <input type="range" id="font_size_slider" min="120" max="800" step="1" value="96"
                  oninput="onFontSizeSlider(this.value)"/>
         </div>
 
@@ -2702,15 +2689,12 @@ function videoUrl(id){ return window.location.origin + `/videos/${id}.mp4`; }
 const FONT_CATALOG = [
   { family:'DM Mono',                       label:'DM Mono', languages:['en','fr','ar'] },
   { family:'Barriecito',                    label:'Barriecito', languages:['en','fr','ar'] },
-  { family:'DT Getai Grotesk Display Black',label:'Getai Grotesk', languages:['en','fr','ar'] },
-  { family:'Gluten',                        label:'Gluten', languages:['en','fr','ar'] },
-  { family:'LC Mogi',                       label:'LC Mogi', languages:['en','fr','ar'] },
-  { family:'Manosque',                      label:'Manosque', languages:['en','fr','ar'] },
-  { family:'Fun Play Arabic_DEMO',          label:'Fun Play Arabic', languages:['ar'] },
-  { family:'Tinta Arabic',                  label:'Tinta Arabic', languages:['ar'] },
-  { family:'monospace',                     label:'Monospace', languages:['en','fr','ar'] },
-  { family:'sans-serif',                    label:'Sans-serif', languages:['en','fr','ar'] },
-  { family:'serif',                         label:'Serif', languages:['en','fr','ar'] },
+  { family:'Gluten',                        label:'Gluten', languages:['en','fr'] },
+  { family:'LC Mogi',                       label:'LC Mogi', languages:['en','fr'] },
+  { family:'Manosque',                      label:'Manosque', languages:['en','fr'] },
+  { family:'monospace',                     label:'Monospace', languages:['en','fr'] },
+  { family:'sans-serif',                    label:'Sans-serif', languages:['en','fr'] },
+  { family:'serif',                         label:'Serif', languages:['en','fr'] },
 ];
 let CUSTOM_FONTS = []; // populated from /api/fonts — {family, url}
 
@@ -2768,7 +2752,7 @@ const FONT_ELEMENT_CONFIG = {
     sizeKey: 'numberFontSize',
     colorKey: 'numberColor',
     previewId: 'prev_num',
-    defaultSize: 96,
+    defaultSize: 120,
     defaultColor: '#FFB84D'
   },
   category: {
@@ -2776,7 +2760,7 @@ const FONT_ELEMENT_CONFIG = {
     sizeKey: 'categoryFontSize',
     colorKey: 'categoryColor',
     previewId: 'prev_cat',
-    defaultSize: 34,
+    defaultSize: 120,
     defaultColor: '#FFB84D'
   },
   facility: {
@@ -2784,7 +2768,7 @@ const FONT_ELEMENT_CONFIG = {
     sizeKey: 'facilityFontSize',
     colorKey: 'facilityColor',
     previewId: 'prev_fac',
-    defaultSize: 24,
+    defaultSize: 120,
     defaultColor: '#FFB84D'
   },
   banner: {
@@ -2792,7 +2776,7 @@ const FONT_ELEMENT_CONFIG = {
     sizeKey: 'bannerFontSize',
     colorKey: 'bannerColor',
     previewId: 'prev_fac',
-    defaultSize: 24,
+    defaultSize: 120,
     defaultColor: '#FFFFFF'
   },
   serving: {
@@ -2800,7 +2784,7 @@ const FONT_ELEMENT_CONFIG = {
     sizeKey: 'nowServingFontSize',
     colorKey: 'nowServingColor',
     previewId: 'prev_label',
-    defaultSize: 16,
+    defaultSize: 120,
     defaultColor: '#FFFFFF'
   }
 };
@@ -2847,7 +2831,7 @@ function setFontFamily(family) {
 
 function onFontSizeSlider(value) {
   const config = FONT_ELEMENT_CONFIG[_currentFontElement];
-  const v = Math.max(8, Math.min(240, parseInt(value) || 8));
+  const v = Math.max(120, Math.min(800, parseInt(value) || 120));
 
   _fontValues[config.sizeKey] = v;
   document.getElementById('font_size_val').textContent = v + 'px';
@@ -3040,7 +3024,7 @@ function setDisplayLanguage(lang) {
   _dispLang = lang;
   document.querySelectorAll('#disp_lang_grp .gi').forEach(b =>
     b.classList.toggle('on', b.dataset.lang === lang));
-  const names = {en:'English', fr:'Français', ar:'العربية'};
+  const names = {en:'English', fr:'Français'};
   const s = document.getElementById('disp_lang_summary');
   if (s) s.textContent = names[lang] || lang;
   if (typeof buildFontGrid === 'function') buildFontGrid();
@@ -3455,6 +3439,19 @@ function createCategory() {
   const name = input ? input.value.trim() : '';
   if (!name) return;
 
+  // Validation: Only letters and spaces allowed, max 30 characters
+  if (name.length > 30) {
+    alert('Category name must be 30 characters or less');
+    return;
+  }
+
+  // Validation: Only letters and spaces (no numbers or special characters)
+  const validNameRegex = /^[a-zA-Z\s]+$/;
+  if (!validNameRegex.test(name)) {
+    alert('Category name can only contain letters and spaces (no numbers or special characters)');
+    return;
+  }
+
   if (!categories.includes(name)) {
     categories.push(name);
   }
@@ -3580,7 +3577,7 @@ function toggleFacilityVisibility() {
   facilityVisible = !facilityVisible;
   const btn = document.getElementById('facility_visible_btn');
   if (btn) btn.classList.toggle('on', facilityVisible);
-  pub('logoVisible', facilityVisible ? 'true' : 'false');
+  pub('facilityVisible', facilityVisible ? 'true' : 'false');
   showConfirm();
 }
 function toggleTts() {
@@ -3681,6 +3678,8 @@ function toggleCategoryVisibility() {
   if (btn) btn.classList.toggle('on', categoryVisible);
   const catPreview = document.getElementById('prev_cat');
   if (catPreview) catPreview.style.display = categoryVisible ? '' : 'none';
+  const rcCategoryRow = document.getElementById('rc_category_row');
+  if (rcCategoryRow) rcCategoryRow.style.display = categoryVisible ? '' : 'none';
   pub('categoryVisible', categoryVisible ? 'true' : 'false');
   pub('categoryAudioEnabled', categoryVisible ? 'true' : 'false');
   showConfirm();
@@ -4221,7 +4220,7 @@ async function uploadBg(input) {
       if (typeof updateBgPreviewTransform === 'function') updateBgPreviewTransform();
       pubBatch([
         ['backgroundType', 'image'],
-        ['backgroundImage', d.url],
+        ['backgroundImage', d.path],
         ['backgroundFitMode', 'auto'],
         ['backgroundScale', '1.0'],
         ['backgroundOffsetX', '0'],
@@ -4563,6 +4562,8 @@ async function init() {
     if (catVisibleBtn) catVisibleBtn.classList.toggle('on', categoryVisible);
     const catPreview = document.getElementById('prev_cat');
     if (catPreview) catPreview.style.display = categoryVisible ? '' : 'none';
+    const rcCategoryRow = document.getElementById('rc_category_row');
+    if (rcCategoryRow) rcCategoryRow.style.display = categoryVisible ? '' : 'none';
 
     const select = document.getElementById('cat_select');
     if (select) {
@@ -4660,6 +4661,12 @@ async function init() {
       logoBtn.classList.toggle('on', logoVisible);
     }
 
+    facilityVisible = d.facilityVisible !== 'false' && d.facilityVisible !== false;
+    const facilityBtn = document.getElementById('facility_visible_btn');
+    if (facilityBtn) {
+      facilityBtn.classList.toggle('on', facilityVisible);
+    }
+
     // Audio state
     muted   = d.audioMuted==='true'||d.audioMuted===true;
     volStep = parseInt(d.audioVolumeStep)||3;
@@ -4681,7 +4688,7 @@ async function init() {
     _dispLang = dl;
     document.querySelectorAll('#disp_lang_grp .gi').forEach(b =>
       b.classList.toggle('on', b.dataset.lang === dl));
-    const dispNames = {en:'English', fr:'Français', ar:'العربية'};
+    const dispNames = {en:'English', fr:'Français'};
     const dls = document.getElementById('disp_lang_summary');
     if (dls) dls.textContent = dispNames[dl] || dl;
     document.getElementById('banner_btn').classList.toggle('on', bannerOn);
@@ -5110,7 +5117,10 @@ function onBgWheel(e) {
       <div class="sheet-body">
         <input
           id="newCategory"
-          placeholder="Category name">
+          placeholder="Category name (max 30 characters, letters only)"
+          maxlength="30"
+          pattern="[a-zA-Z\s]+"
+          title="Category name can only contain letters and spaces (max 30 characters)">
 
         <button class="create-btn" onclick="createCategory()">
           <span>+</span>

@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+.eggs/
+*.egg
+dist/
+build/
+
+# Virtual envs
+venv/
+.venv/
+env/
+ENV/
+
+# PyInstaller
+*.manifest
+*.spec
+
+# IDEs / editors
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+.devin/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Pipenv / poetry
+.pip-wheel-metadata/
+poetry.lock
+
+# Tests / caches
+.pytest_cache/
+
+# Logs
+*.log
+
+# Admin uploads / runtime state
+web/uploads/
+home/
+*.db
+*.sqlite
+
+# Qt/PySide build artifacts
+*.rcc
+*.qrc.py
+# Generated Python resource bindings
+resources/qrc/resource_rc.py

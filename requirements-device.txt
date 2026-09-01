@@ -1,0 +1,6 @@
+PySide6
+paho-mqtt
+pygame
+pillow
+qrcode[pil]
+# keyboard intentionally excluded for kiosk device

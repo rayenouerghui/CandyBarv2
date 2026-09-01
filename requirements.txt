@@ -1,0 +1,9 @@
+PySide6
+paho-mqtt
+pygame
+num2words
+edge-tts
+pydub
+keyboard
+qrcode[pil]
+pillow

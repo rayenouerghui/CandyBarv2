@@ -1,0 +1,1 @@
+"""Display module for UI and QML integration."""

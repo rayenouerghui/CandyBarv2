@@ -1,0 +1,134 @@
+#!/usr/bin/env bash
+# ─────────────────────────────────────────────────────────────────
+#  CandyBarV2 — one-shot launcher
+#  Usage:  ./run
+# ─────────────────────────────────────────────────────────────────
+set -e
+cd "$(dirname "$0")"
+
+
+# ── 0. Check Python version ────────────────────────────────────
+PYTHON_CMD="python3"
+if ! command -v python3 &> /dev/null; then
+    echo "[run] ERROR: python3 not found. Please install Python 3.8 or higher."
+    exit 1
+fi
+
+PYTHON_VERSION=$(python3 -c 'import sys; print(".".join(map(str, sys.version_info[:2])))')
+PYTHON_MAJOR=$(echo $PYTHON_VERSION | cut -d. -f1)
+PYTHON_MINOR=$(echo $PYTHON_VERSION | cut -d. -f2)
+
+echo "[run] Detected Python $PYTHON_VERSION"
+
+# Check if version is 3.8 or higher
+if [ "$PYTHON_MAJOR" -ne 3 ] || [ "$PYTHON_MINOR" -lt 8 ]; then
+    echo "[run] ERROR: CandyBarV2 requires Python 3.8 or higher."
+    echo "[run] Current version: $PYTHON_VERSION"
+    echo "[run] Please install Python 3.8 or higher from https://www.python.org/downloads/"
+    exit 1
+fi
+
+PYTHON="./venv/bin/python3"
+PIP="./venv/bin/pip"
+RCC="./venv/bin/pyside6-rcc"
+
+# ── 1. Create venv if missing ────────────────────────────────────
+if [ ! -f "$PYTHON" ]; then
+    echo "[run] Creating virtual environment..."
+    python3 -m venv venv
+fi
+
+# ── 2. Ensure pip exists in venv ──────────────────────────────────
+if [ ! -f "$PIP" ]; then
+    echo "[run] pip not found in venv, installing via get-pip.py..."
+    curl -sS https://bootstrap.pypa.io/get-pip.py | $PYTHON
+fi
+
+# ── 3. Check for port conflict before launch ─────────────────────
+# Skip check if SKIP_PORT_CHECK is set (used by run-desktop for testing)
+if [ -z "$SKIP_PORT_CHECK" ]; then
+    if python3 - <<'PY' | grep -q busy; then
+import socket
+s = socket.socket()
+try:
+    s.bind(("0.0.0.0", 8080))
+    print("free")
+except OSError:
+    print("busy")
+finally:
+    s.close()
+PY
+        echo "[run] ERROR: port 8080 is already in use. Check for another CandyBarV2 instance or a conflicting service."
+        exit 1
+    fi
+else
+    echo "[run] Skipping port check (SKIP_PORT_CHECK is set)"
+fi
+
+# ── 4. Install / sync dependencies ──────────────────────────────
+echo "[run] Checking dependencies (device runtime)..."
+# Install only device runtime dependencies by default. Developer-only TTS tools are in requirements-dev.txt
+$PIP install -q -r requirements-device.txt
+
+# ── 3. Compile QRC resources ────────────────────────────────────
+if [ -f "$RCC" ]; then
+    echo "[run] Compiling Qt resources..."
+    $RCC resources/qrc/resource.qrc -o resources/qrc/resource_rc.py
+else
+    echo "[run] Warning: pyside6-rcc not found in virtual environment, skipping compilation."
+fi
+
+# Run lightweight UI linter to prevent reintroduction of heavy graphical effects
+if [ -f ./maintenance/check_lightweight_ui.py ]; then
+    echo "[run] Running lightweight UI check..."
+    ./venv/bin/python ./maintenance/check_lightweight_ui.py
+fi
+
+# ── 4. Launch ───────────────────────────────────────────────────
+echo "[run] Starting CandyBarV2..."
+
+# Default rendering config for devices that boot directly to the framebuffer
+# (no desktop). This avoids unpredictable GL driver fallbacks on Pi Zero 2 W.
+export QT_QUICK_BACKEND=software
+export QT_QPA_PLATFORM=linuxfb
+
+# GStreamer decoder ranking: prefer hardware VPU decode (v4l2h264dec) but allow
+# software fallback (avdec_h264) if VPU unavailable. Hardware decode is MAX priority,
+# software is LOW priority (not disabled, just deprioritized).
+export GST_PLUGIN_FEATURE_RANK=v4l2h264dec:MAX,avdec_h264:LOW
+export QT_MEDIA_BACKEND=gstreamer
+
+# Optional override file — lets a tester change platform/backend on-device
+# without editing this script or pushing new code. Create platform.env next
+# to this script to override, e.g.:
+#   QT_QPA_PLATFORM=eglfs
+#   QT_QUICK_BACKEND=""
+if [ -f ./platform.env ]; then
+    echo "[run] Loading platform overrides from platform.env..."
+    set -a
+    source ./platform.env
+    set +a
+fi
+echo "[run] QT_QUICK_BACKEND=${QT_QUICK_BACKEND:-<unset>}  QT_QPA_PLATFORM=${QT_QPA_PLATFORM:-<unset>}"
+
+# ── 5. Boot-level crash log ────────────────────────────────────
+# Captures stdout/stderr from the moment Python starts, including any crash
+# or import error that happens BEFORE the app's own file logger initializes
+# (e.g. missing shared libs, segfaults, EGL/GL failures). The app's own
+# rotating logs live separately under ~/.local/share/candybar/logs/.
+BOOT_LOG_DIR="$HOME/.local/share/candybar/logs"
+mkdir -p "$BOOT_LOG_DIR"
+BOOT_LOG="$BOOT_LOG_DIR/boot_$(date +%Y%m%d_%H%M%S).log"
+
+echo "[run] Boot log: $BOOT_LOG"
+echo "[run] App logs: $BOOT_LOG_DIR/candybar_*.log"
+{
+    echo "=== CandyBarV2 boot $(date) ==="
+    echo "Python: $($PYTHON --version 2>&1)"
+    echo "QT_QUICK_BACKEND=${QT_QUICK_BACKEND:-<unset>}"
+    echo "QT_QPA_PLATFORM=${QT_QPA_PLATFORM:-<unset>}"
+    free -h 2>/dev/null || true
+    echo "==="
+} >> "$BOOT_LOG"
+
+exec $PYTHON main.py 2>&1 | tee -a "$BOOT_LOG"

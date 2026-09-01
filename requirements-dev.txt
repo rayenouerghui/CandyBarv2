@@ -1,0 +1,4 @@
+edge-tts
+num2words
+pydub
+# Dev-only: TTS generation and build tools for maintenance/generate_audio.py

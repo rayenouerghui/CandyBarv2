@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover"/>
+  <meta name="theme-color" content="#0f1117"/>
+  <title>CandyBar Admin</title>
+  <link rel="icon" href="/favicon.ico"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/admin.css">
+<base target="_blank">
+</head>
+<body>
+<div id="loading-overlay">
+  <div class="loader"></div>
+  <div class="loading-text">Loading CandyBar Admin...</div>
+</div>
+
+<div id="pin-modal" class="hide">
+  <div class="pin-modal-content">
+    <div class="pin-modal-title">Enter PIN</div>
+    <div class="pin-modal-desc">Enter your 4-digit admin PIN to access the control panel</div>
+    <input type="password" id="pin_entry" class="pin-input" maxlength="4" inputmode="numeric" placeholder="••••"/>
+    <div id="pin_error" class="pin-error"></div>
+    <button class="pin-submit" onclick="verifyPin()">Unlock</button>
+  </div>
+</div>
+
+<div id="app">
+  <!-- header -->
+  <div class="hdr">
+    <h1>CandyBar<span class="sub">Queue display control</span></h1>
+    <div class="conn"><div class="dot off" id="dot"></div><span id="conn_lbl">Connecting...</span></div>
+  </div>
+
+  <div id="disc_banner">⚠ Lost connection to server — controls locked until connection is restored</div>
+
+  <!-- ===== SECTION =====
+       HOME TAB
+  ===== SECTION ===== -->
+  <div class="pane" id="p_home">
+    <div style="text-align:center;padding:20px 0">
+      <div style="width:64px;height:64px;margin:0 auto 16px;color:var(--primary);opacity:0.8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></div>
+      <h2 style="font-size:24px;font-weight:700;color:var(--text);margin-bottom:8px">Welcome</h2>
+      <p style="font-size:15px;color:var(--text-secondary);line-height:1.5">
+        CandyBar Admin Control<br/>
+        Manage your queue display, announcements and appearance from one place.
+      </p>
+    </div>
+    <div class="home-grid">
+      <div class="home-card" onclick="tab('remote')">
+        <div class="home-card-icon" style="width:40px;height:40px;color:var(--primary);display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+        <div class="home-card-title">Remote Control</div>
+        <div class="home-card-desc">Queue & audio</div>
+      </div>
+      <div class="home-card" onclick="tab('settings')">
+        <div class="home-card-icon" style="width:40px;height:40px;color:var(--primary);display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.17 15a1.65 1.65 0 0 0-1.51-1H2a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.17 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.17a1.65 1.65 0 0 0 1-1.51V2a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+        <div class="home-card-title">Settings</div>
+        <div class="home-card-desc">Category & facility</div>
+      </div>
+      <div class="home-card" onclick="tab('theme')">
+        <div class="home-card-icon" style="width:40px;height:40px;color:var(--primary);display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20 10 10 0 0 1 0-20z" fill="currentColor" opacity="0.2"/><path d="M12 2a10 10 0 0 0 0 20 10 10 0 0 0 0-20z" fill="currentColor" opacity="0.1"/></svg></div>
+        <div class="home-card-title">Theme</div>
+        <div class="home-card-desc">Theme & colors</div>
+      </div>
+      <div class="home-card" onclick="tab('health')">
+        <div class="home-card-icon" style="width:40px;height:40px;color:var(--primary);display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+        <div class="home-card-title">System Health</div>
+        <div class="home-card-desc">Uptime & activity</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden preview elements (kept for JavaScript compatibility) -->
+  <div style="display:none">
+    <div class="prev-bg" id="prev_bg"></div>
+    <div class="prev-label" id="prev_label">NOW SERVING</div>
+    <div class="prev-cat" id="prev_cat">Category A</div>
+    <div class="prev-num" id="prev_num" style="font-size:42px">001</div>
+    <div class="prev-bar" id="prev_bar"></div>
+    <div class="prev-fac" id="prev_fac"></div>
+  </div>
+
+  <!-- ===== SECTION =====
+       REMOTE TAB
+  ===== SECTION ===== -->
+  <div class="pane hide" id="p_remote">
+    <div class="card">
+      <div class="lbl" data-i18n="queue_number">Queue Number</div>
+
+      <div class="number-well">
+        <p id="queueNumberDisplay">000</p>
+        <span class="number-label">Now Serving</span>
+      </div>
+
+      <div class="stepper-grid">
+        <button class="step-btn-grid" id="decrementBtn" onclick="adj(-1)" type="button" aria-label="Decrease queue number">
+          −
+        </button>
+        <button class="step-btn-grid" id="incrementBtn" onclick="adj(1)" type="button" aria-label="Increase queue number">
+          +
+        </button>
+      </div>
+
+      <input class="step-num" id="num_input" type="number" min="0" max="999"
+       value="0" onblur="validateAndSetNumber()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" placeholder="Enter number"/>
+      <div id="num_error" style="color:var(--danger);font-size:12px;margin-top:4px;display:none">Invalid: enter a whole number 0-999</div>
+
+      <div id="rc_category_row" style="font-size:14px;color:var(--text-secondary);text-align:center;font-weight:500;margin-top:12px">
+        Category: <span id="rc_code" style="display:none">A</span><span id="rc_name">Category A</span>
+      </div>
+
+      <button id="callNextBtn" type="button" onclick="callCurrentNumber()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+        </svg>
+        Call
+      </button>
+
+      <button id="resetBtn" type="button" onclick="resetNumber()">Reset Queue</button>
+    </div>
+    <div class="card">
+      <div class="lbl">Audio</div>
+      <div class="switch-container" style="margin-bottom:16px">
+        <span class="switch-label">Mute</span>
+        <button id="mute_btn" class="ios-switch" onclick="toggleMute()"></button>
+      </div>
+      <div class="lbl" style="margin-bottom:8px">Volume</div>
+      <div class="grp" id="vol_grp">
+        <input id="vol_slider" type="range" min="0" max="100" value="75"
+               oninput="onVolSlider(this.value)" style="width:100%" />
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+          <div style="font-size:14px;color:var(--text-secondary);font-weight:500">Level</div>
+          <div id="vol_label" style="font-weight:700;font-family:'DM Mono',monospace">75%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- ===== SECTION =====
+       SETTINGS TAB
+  ===== SECTION ===== -->
+  <div class="pane hide" id="p_settings">
+
+    <div class="card">
+      <button class="acc-head" onclick="toggleCard(this)">
+        <span class="acc-ic" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--primary)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
+        <span class="acc-t"><b data-i18n="facility_title">Display view</b><small data-i18n="facility_sub">Name, message & category</small></span>
+        <span class="acc-chev">⌄</span>
+      </button>
+      <div class="acc-body" style="gap:16px">
+        <div class="slider-row" style="gap:8px">
+          <span class="slider-lbl">Category name</span>
+          <input type="text" id="cat_name" placeholder="e.g. Pizza" maxlength="30"
+                 onblur="saveCategory()"
+                 onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"/>
+        </div>
+
+        <div class="switch-container">
+          <span class="switch-label">Show Category Badge</span>
+          <button id="cat_visible_btn" class="ios-switch on" onclick="toggleCategoryVisibility()"></button>
+        </div>
+
+        <div style="border-top:1px solid var(--border);margin:16px 0"></div>
+
+        <div class="slider-row" style="gap:8px">
+          <span class="slider-lbl">Facility name</span>
+          <input type="text" id="facility" placeholder="Facility name" onblur="saveFacility()"/>
+        </div>
+        <div class="switch-container">
+          <span class="switch-label">Show facility name on-screen</span>
+          <button id="facility_visible_btn" class="ios-switch on" onclick="toggleFacilityVisibility()"></button>
+        </div>
+        <div class="slider-row" style="gap:8px">
+          <span class="slider-lbl">Banner message</span>
+          <textarea id="banner" rows="2" placeholder="Banner message…" onblur="saveBanner()"></textarea>
+        </div>
+        <div class="switch-container">
+          <span class="switch-label">Show banner on-screen</span>
+          <button id="banner_btn" class="ios-switch on" onclick="toggleBanner()"></button>
+        </div>
+        <div class="slider-row" style="gap:8px">
+          <span class="slider-lbl">Now Serving text</span>
+          <input type="text" id="now_serving_text" placeholder="NOW SERVING" onblur="saveNowServingText()"/>
+        </div>
+        <div class="switch-container">
+          <span class="switch-label">Show Now Serving on-screen</span>
+          <button id="now_serving_visible_btn" class="ios-switch on" onclick="toggleNowServingVisibility()"></button>
+        </div>
+
+        <input type="hidden" id="cat_id" value="A"/>
+      </div>
+    </div>
+
+    <div class="card">
+      <button class="acc-head" onclick="toggleCard(this)">
+        <span class="acc-ic" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--primary)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></span>
+        <span class="acc-t"><b data-i18n="tts_title">Text-to-speech</b><small id="tts_summary">Enabled · English</small></span>
+        <span class="acc-chev">⌄</span>
+      </button>
+      <div class="acc-body" style="gap:16px">
+        <div class="switch-container">
+          <span class="switch-label">Speech announcements</span>
+          <button id="tts_btn" class="ios-switch on" onclick="toggleTts()"></button>
+        </div>
+        <div class="slider-row" style="gap:8px">
+          <span class="slider-lbl">Speech language</span>
+          <select id="tts_lang" onchange="pub('ttsLanguage',this.value);updateTtsSummary()">
+            <option value="en">English</option>
+            <option value="fr">French</option>
+            <option value="ar">Arabic</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <button class="acc-head" onclick="toggleCard(this)">
+        <span class="acc-ic" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--primary)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span>
+        <span class="acc-t"><b data-i18n="languages_title">Languages</b><small data-i18n="languages_sub">Display and admin panel language</small></span>
+        <span class="acc-chev">⌄</span>
+      </button>
+      <div class="acc-body" style="gap:16px">
+        <div class="hint-txt">
+          Language of this control panel
+        </div>
+        <div class="slider-row" style="gap:8px">
+          <span class="slider-lbl">Admin panel language</span>
+          <div class="grp" id="admin_lang_grp">
+            <button class="gi on" id="al_en" data-lang="en" onclick="setAdminLang('en')">🇬🇧 English</button>
+            <button class="gi"    id="al_fr" data-lang="fr" onclick="setAdminLang('fr')">🇫🇷 Français</button>
+            <button class="gi"    id="al_ar" data-lang="ar" onclick="setAdminLang('ar')">🇸🇦 العربية</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <button class="acc-head" onclick="toggleCard(this)">
+        <span class="acc-ic" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--primary)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+        <span class="acc-t"><b data-i18n="pin_title">Admin PIN</b><small data-i18n="pin_sub">4-digit code to unlock this panel</small></span>
+        <span class="acc-chev">⌄</span>
+      </button>
+      <div class="acc-body" style="gap:16px">
+        <div style="display:flex;gap:12px">
+          <input type="password" id="new_pin" placeholder="New 4-digit PIN"
+                 maxlength="4" inputmode="numeric" style="flex:1"/>
+          <button class="gi" style="flex:none;padding:14px 20px" onclick="changePin()">Save</button>
+        </div>
+        <button class="gi" style="width:100%;background:var(--danger);color:white;border-color:var(--danger)" onclick="removePin()">Remove PIN Protection</button>
+        <div id="pin_reset_status" style="display:none;font-size:12px;color:var(--success);margin-top:-4px">PIN reset to default: 1234</div>
+      </div>
+    </div>
+
+    <div class="card" style="flex-direction:row;align-items:center;gap:12px;padding:20px;cursor:pointer" onclick="tab('health')">
+      <span class="acc-ic" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--primary);flex:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      </span>
+      <span class="acc-t" style="flex:1">
+        <b style="font-size:15px;font-weight:600">System Health</b>
+        <small style="font-size:12px;color:var(--text-secondary)">View uptime & activity metrics</small>
+      </span>
+      <span style="color:var(--text-tertiary)">→</span>
+    </div>
+
+  </div>
+  <!-- ===== SECTION =====
+     HEALTH TAB
+===== SECTION ===== -->
+<div class="pane hide" id="p_health">
+
+  <!-- Status Header -->
+  <div class="card open">
+    <div style="display:flex;align-items:center;justify-content:center;flex-direction:column;padding:32px 20px;gap:16px">
+      <div style="font-size:13px;font-weight:600;color:var(--text-tertiary);letter-spacing:0.08em;text-transform:uppercase">System Status</div>
+      <div id="health_indicator" style="width:80px;height:80px;border-radius:50%;background:var(--success);display:flex;align-items:center;justify-content:center;transition:background 0.5s ease-out">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="width:40px;height:40px"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      </div>
+      <div id="health_status" style="font-size:16px;font-weight:600;color:var(--text-secondary)">Checking...</div>
+    </div>
+  </div>
+
+  <!-- Live Metrics -->
+  <div class="card">
+    <button class="acc-head" onclick="toggleCard(this)">
+      <span class="acc-ic" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--primary)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+        </svg>
+      </span>
+      <span class="acc-t"><b>Live Metrics</b><small>Real-time system numbers</small></span>
+      <span class="acc-chev">⌄</span>
+    </button>
+    <div class="acc-body">
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-l">Uptime</div>
+          <div class="stat-v" id="stat_uptime">--</div>
+        </div>
+        <div class="stat">
+          <div class="stat-l">Sessions</div>
+          <div class="stat-v" id="stat_sessions">--</div>
+        </div>
+        <div class="stat">
+          <div class="stat-l">Numbers Called</div>
+          <div class="stat-v" id="stat_changes">--</div>
+        </div>
+        <div class="stat">
+          <div class="stat-l">Current Number</div>
+          <div class="stat-v" id="stat_current">--</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Connection -->
+  <div class="card">
+    <button class="acc-head" onclick="toggleCard(this)">
+      <span class="acc-ic" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--primary)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/>
+        </svg>
+      </span>
+      <span class="acc-t"><b>Connection</b><small>Server and network status</small></span>
+      <span class="acc-chev">⌄</span>
+    </button>
+    <div class="acc-body">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--bg-sunken);border-radius:8px">
+          <span style="font-size:13px;color:var(--text-secondary)">Server</span>
+          <span id="conn_server" style="font-size:13px;font-weight:600;color:var(--success)">Connected</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--bg-sunken);border-radius:8px">
+          <span style="font-size:13px;color:var(--text-secondary)">Last Restart</span>
+          <span id="h_rst" style="font-size:13px;font-weight:600;color:var(--text)">—</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Remote Controller -->
+  <div class="card">
+    <button class="acc-head" onclick="toggleCard(this)">
+      <span class="acc-ic" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--primary)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+      </span>
+      <span class="acc-t"><b>Remote Controller</b><small>MQTT broker status</small></span>
+      <span class="acc-chev">⌄</span>
+    </button>
+    <div class="acc-body">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--bg-sunken);border-radius:8px">
+          <span style="font-size:13px;color:var(--text-secondary)">MQTT Broker</span>
+          <span id="mqtt_broker_status" style="font-size:13px;font-weight:600;color:var(--text)">Checking...</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--bg-sunken);border-radius:8px">
+          <span style="font-size:13px;color:var(--text-secondary)">Status</span>
+          <span id="mqtt_status_detail" style="font-size:13px;font-weight:600;color:var(--text)">—</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="card" style="flex-direction:row;align-items:center;gap:12px;padding:20px;cursor:pointer" onclick="restartDisplay(this)">
+    <span class="acc-ic" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--danger);flex:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+      </svg>
+    </span>
+    <span class="acc-t" style="flex:1">
+      <b style="font-size:15px;font-weight:600">Restart Display</b>
+      <small style="font-size:12px;color:var(--text-secondary)">Reboot the kiosk application</small>
+    </span>
+  </div>
+
+  <div class="card" style="flex-direction:row;align-items:center;gap:12px;padding:20px;cursor:pointer" onclick="resetDisplayToDefault(this)">
+    <span class="acc-ic" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--warning);flex:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/>
+        <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+      </svg>
+    </span>
+    <span class="acc-t" style="flex:1">
+      <b style="font-size:15px;font-weight:600">Reset display to default</b>
+      <small style="font-size:12px;color:var(--text-secondary)">Reset number to 000 and clear counters</small>
+    </span>
+  </div>
+
+</div>
+  <!-- ===== SECTION =====
+       THEME TAB
+  ===== SECTION ===== -->
+  <div class="pane hide" id="p_theme">
+
+    <!-- Templates -->
+    <div class="card">
+      <button class="acc-head" onclick="toggleCard(this)">
+        <span class="acc-ic" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--primary)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
+        <span class="acc-t"><b data-i18n="templates_title">Ready-made templates</b><small data-i18n="templates_sub">One tap sets colors, background &amp; font</small></span>
+        <span class="acc-chev">⌄</span>
+      </button>
+      <div class="acc-body">
+        <div class="capsules" id="catCapsules">
+          <button class="capsule active" data-cat="food">Food</button>
+          <button class="capsule" data-cat="pro">Professional</button>
+          <button class="capsule" data-cat="coffee">Coffee</button>
+        </div>
+        <div class="capsules sub" id="typeCapsules">
+          <button class="capsule sub active" data-type="static">Static</button>
+          <button class="capsule sub" data-type="animated">Animated</button>
+        </div>
+        <div class="tpl-grid" id="tplGrid"></div>
+        <div id="tplEmptyState" class="tpl-empty-state" style="display:none">No templates in this combination yet.</div>
+      </div>
+    </div>
+
+    <!-- Layout -->
+    <div class="card">
+      <button class="acc-head" onclick="toggleCard(this)">
+        <span class="acc-ic" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--primary)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg></span>
+        <span class="acc-t"><b>Layout</b><small id="layout_summary">Centered</small></span>
+        <span class="acc-chev">⌄</span>
+      </button>
+      <div class="acc-body">
+        <div class="lay-grid">
+          <div class="lay-thumb" id="lay_Split1" onclick="setLayout('Split1')">
+            <svg width="48" height="30" viewBox="0 0 48 30" fill="none">
+              <rect width="48" height="30" rx="3" fill="rgba(255,255,255,.05)"/>
+              <rect x="0" y="0" width="27" height="30" rx="3" fill="rgba(255,255,255,.10)"/>
+              <rect x="8" y="10" width="12" height="10" rx="2" fill="rgba(255,255,255,.35)"/>
+              <rect x="30" y="6" width="13" height="3" rx="1" fill="rgba(255,255,255,.20)"/>
+              <rect x="30" y="11" width="10" height="3" rx="1" fill="rgba(255,255,255,.14)"/>
+              <rect x="30" y="16" width="8" height="3" rx="1" fill="rgba(255,255,255,.09)"/>
+            </svg><span>Split 1</span>
+          </div>
+          <div class="lay-thumb" id="lay_Split2" onclick="setLayout('Split2')">
+            <svg width="48" height="30" viewBox="0 0 48 30" fill="none">
+              <rect width="48" height="30" rx="3" fill="rgba(255,255,255,.05)"/>
+              <rect x="21" y="0" width="27" height="30" rx="3" fill="rgba(255,255,255,.10)"/>
+              <rect x="28" y="10" width="12" height="10" rx="2" fill="rgba(255,255,255,.35)"/>
+              <rect x="5" y="6" width="13" height="3" rx="1" fill="rgba(255,255,255,.20)"/>
+              <rect x="8" y="11" width="10" height="3" rx="1" fill="rgba(255,255,255,.14)"/>
+              <rect x="10" y="16" width="8" height="3" rx="1" fill="rgba(255,255,255,.09)"/>
+            </svg><span>Split 2</span>
+          </div>
+          <div class="lay-thumb on" id="lay_Centered" onclick="setLayout('Centered')">
+            <svg width="48" height="30" viewBox="0 0 48 30" fill="none">
+              <rect width="48" height="30" rx="3" fill="rgba(255,255,255,.05)"/>
+              <rect x="20" y="3" width="8" height="8" rx="2" fill="rgba(255,255,255,.18)"/>
+              <rect x="10" y="13" width="28" height="10" rx="2" fill="rgba(255,255,255,.30)"/>
+              <rect x="16" y="25" width="16" height="3" rx="1" fill="rgba(255,255,255,.14)"/>
+            </svg><span>Centered</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cadre (Frame) -->
+    <div class="card">
+      <button class="acc-head" onclick="toggleCard(this)">
+        <span class="acc-ic" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--primary)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><rect x="7" y="7" width="10" height="10" rx="1" stroke-dasharray="2 2"/></svg></span>
+        <span class="acc-t"><b data-i18n="cadre_title">Cadre</b><small data-i18n="cadre_sub">Frame style for display content</small></span>
+        <span class="acc-chev">⌄</span>
+      </button>
+      <div class="acc-body" style="gap:16px">
+        <div class="switch-container">
+          <span class="switch-label">Enable cadre</span>
+          <button id="cadre_enabled_btn" class="ios-switch" onclick="toggleCadreEnabled()"></button>
+        </div>
+
+        <!-- Cadre style picker — 3 visual cards -->
+        <div class="slider-row" style="gap:8px">
+          <span class="slider-lbl">Cadre style</span>
+          <div class="cadre-type-grid" id="cadre_type_grid">
+            <button type="button" class="cadre-type-card" data-type="glass" onclick="selectCadreType('glass')">
+              <div class="cadre-type-preview cadre-preview-glass"></div>
+              <span>Glass</span>
+            </button>
+            <button type="button" class="cadre-type-card" data-type="dark" onclick="selectCadreType('dark')">
+              <div class="cadre-type-preview cadre-preview-dark"></div>
+              <span>Dark</span>
+            </button>
+            <button type="button" class="cadre-type-card" data-type="custom" onclick="selectCadreType('custom')">
+              <div class="cadre-type-preview cadre-preview-custom"></div>
+              <span>Custom</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Appears once a style is picked -->
+        <button type="button" class="gi" id="cadre_adjust_toggle_btn" onclick="toggleCadreAdjust()" style="display:none">Adjust</button>
+
+        <!-- Hidden until "Adjust" is tapped -->
+        <div id="cadre_adjust_panel" style="display:none; flex-direction:column; gap:16px">
+
+          <div class="slider-row" style="justify-content:flex-end">
+            <button type="button" class="gi" onclick="resetCadreDefaults()">Reset to default</button>
+          </div>
+
+          <!-- Cadre Color picker — only relevant for Custom -->
+          <div id="cadre_color_row" class="slider-row" style="display:none; flex-direction:column; align-items:stretch; gap:8px">
+            <div class="slider-header" style="display:flex; justify-content:space-between">
+              <span class="slider-lbl">Cadre Color</span>
+              <span class="slider-val" id="cadre_color_val" style="font-weight:600;font-family:'DM Mono',monospace;font-size:13px">#FFB84D</span>
+            </div>
+            <input type="color" id="cadre_color_picker" value="#FFB84D" style="width:100%; height:40px; border:none; border-radius:6px; cursor:pointer"
+                   oninput="onCadreColorPicker(this.value)"/>
+            <div class="swatch-row" id="cadre_swatch_row" style="display:flex; gap:6px; flex-wrap:wrap; margin-top:4px"></div>
+          </div>
+
+          <div class="slider-row">
+            <span class="slider-lbl">Opacity</span>
+            <input type="range" id="cadre_opacity" min="0" max="100" value="34" oninput="setCadreOpacity(this.value)"/>
+            <span id="cadre_opacity_val" style="font-weight:600;font-family:'DM Mono',monospace;font-size:13px">34%</span>
+          </div>
+
+          <div class="slider-row">
+            <span class="slider-lbl">Blur</span>
+            <input type="range" id="cadre_blur" min="0" max="100" value="31" oninput="setCadreBlur(this.value)"/>
+            <span id="cadre_blur_val" style="font-weight:600;font-family:'DM Mono',monospace;font-size:13px">31</span>
+          </div>
+
+          <div class="slider-row">
+            <span class="slider-lbl">Corner radius</span>
+            <input type="range" id="cadre_radius" min="0" max="64" value="42" oninput="setCadreRadius(this.value)"/>
+            <span id="cadre_radius_val" style="font-weight:600;font-family:'DM Mono',monospace;font-size:13px">42px</span>
+          </div>
+
+          <div class="slider-row">
+            <span class="slider-lbl">Border width</span>
+            <input type="range" id="cadre_border" min="0" max="10" value="2" step="0.5" oninput="setCadreBorder(this.value)"/>
+            <span id="cadre_border_val" style="font-weight:600;font-family:'DM Mono',monospace;font-size:13px">2px</span>
+          </div>
+
+          <div class="slider-row">
+            <span class="slider-lbl">Padding</span>
+            <input type="range" id="cadre_padding" min="0" max="100" value="37" oninput="setCadrePadding(this.value)"/>
+            <span id="cadre_padding_val" style="font-weight:600;font-family:'DM Mono',monospace;font-size:13px">37px</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Upload & Adjust Background -->
+    <div class="card">
+      <button class="acc-head" onclick="toggleCard(this)">
+        <span class="acc-ic" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--primary)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></span>
+        <span class="acc-t"><b>Upload &amp; Adjust</b><small>Upload custom background or adjust fit</small></span>
+        <span class="acc-chev">⌄</span>
+      </button>
+      <div class="acc-body" style="gap:16px">
+        <label class="upload" for="bg_file">
+          <div class="upload-hint" id="bg_hint">Upload custom background <span style="color:var(--text-tertiary);font-weight:400">JPG/PNG, max 5 MB</span></div>
+          <img id="bg_prev" src="" style="display:none;max-height:100px;border-radius:8px"/>
+        </label>
+        <input type="file" id="bg_file" accept=".png,.jpg,.jpeg"
+               style="display:none" onchange="uploadBg(this)"/>
+        <button class="gi"
+                style="background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.2);color:var(--danger)"
+                onclick="removeBg()">Remove custom background</button>
+
+        <div class="sep" style="margin:16px 0 8px">Adjustments</div>
+        <button class="gi" onclick="openBgAdjustModal()">Adjust Background Position</button>
+        <div id="bg_sel_lbl" style="font-size:12px;color:var(--text-secondary);text-align:center;min-height:16px"></div>
+        <div id="bg-picker-status" style="font-size:12px;color:var(--primary);text-align:center;min-height:16px;font-weight:600"></div>
+        <div class="slider-row">
+          <div class="slider-header">
+            <span class="slider-lbl">Fit mode</span>
+          </div>
+          <select id="bg_fit_mode" onchange="setBgFitMode(this.value)">
+            <option value="crop">Crop</option>
+            <option value="fit">Fit</option>
+            <option value="stretch">Stretch</option>
+            <option value="auto">Auto</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Logo -->
+    <div class="card">
+      <button class="acc-head" onclick="toggleCard(this)">
+        <span class="acc-ic" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--primary)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></span>
+        <span class="acc-t"><b>Logo</b><small id="logo_summary">No logo uploaded</small></span>
+        <span class="acc-chev">⌄</span>
+      </button>
+      <div class="acc-body" style="gap:16px">
+        <label class="upload" for="logo_file">
+          <img id="logo_prev" src="" style="display:none"/>
+          <div class="upload-hint" id="logo_hint">Tap to upload logo <span style="color:var(--text-tertiary);font-weight:400">PNG/JPG/SVG, max 2 MB</span></div>
+        </label>
+        <input type="file" id="logo_file" accept=".png,.jpg,.jpeg,.svg"
+               style="display:none" onchange="uploadLogo(this)"/>
+        <button class="gi"
+                style="background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.2);color:var(--danger);margin-top:8px"
+                onclick="deleteLogo()">Remove custom logo</button>
+        <div class="slider-row" style="gap:8px">
+          <span class="slider-lbl" data-i18n="logo_pos_lbl">Position</span>
+          <select id="logo_pos" onchange="pub('logoPosition',this.value)">
+            <option value="top-left">Top Left</option>
+            <option value="top-center">Top Center</option>
+            <option value="top-right">Top Right</option>
+          </select>
+        </div>
+        <div class="switch-container">
+          <span class="switch-label" data-i18n="logo_visibility">Visibility</span>
+          <button id="logo_visible_btn" class="ios-switch on" onclick="toggleLogoVisibility()"></button>
+        </div>
+        <div class="slider-row">
+          <div class="slider-header">
+            <span class="slider-lbl">Logo size</span>
+            <span class="slider-val" id="ls_val">48px</span>
+          </div>
+          <input type="range" id="ls_slider" min="24" max="120" step="1" value="48"
+                 oninput="onLsSlider(this.value)"/>
+        </div>
+      </div>
+    </div>
+
+    <!-- Font - unified section with tabs for each element -->
+    <div class="card">
+      <button class="acc-head" onclick="toggleCard(this)">
+        <span class="acc-ic" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--primary)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg></span>
+        <span class="acc-t"><b>Font</b><small id="font_summary">Number · 96px · DM Mono</small></span>
+        <span class="acc-chev">⌄</span>
+      </button>
+      <div class="acc-body" style="gap:16px">
+        <div class="hint-txt">Customize font, size, and color for each text element individually.</div>
+
+        <!-- Element tabs -->
+        <div class="font-target-grid" id="font_target_grid">
+          <button class="gi on" data-target="number" onclick="setFontElement('number')">Number</button>
+          <button class="gi"    data-target="category" onclick="setFontElement('category')">Category</button>
+          <button class="gi"    data-target="facility" onclick="setFontElement('facility')">Facility</button>
+          <button class="gi"    data-target="banner" onclick="setFontElement('banner')">Banner</button>
+          <button class="gi"    data-target="serving" onclick="setFontElement('serving')">Serving</button>
+        </div>
+
+        <!-- Font family selector -->
+        <div class="slider-row" style="gap:8px">
+          <span class="slider-lbl">Font family</span>
+          <div class="font-type-grid" id="font_type_grid"></div>
+        </div>
+
+        <!-- Size slider -->
+        <div class="slider-row">
+          <div class="slider-header">
+            <span class="slider-lbl">Size</span>
+            <span class="slider-val" id="font_size_val">120px</span>
+          </div>
+          <input type="range" id="font_size_slider" min="120" max="700" step="1" value="120"
+                 oninput="onFontSizeSlider(this.value)"/>
+        </div>
+
+        <!-- Color picker -->
+        <div class="slider-row">
+          <div class="slider-header">
+            <span class="slider-lbl">Color</span>
+            <span class="slider-val" id="font_color_val">#FFB84D</span>
+          </div>
+          <input type="color" id="font_color_picker" value="#FFB84D"
+                 oninput="onFontColorPicker(this.value)"/>
+          <div class="swatch-row" id="font_swatch_row"></div>
+        </div>
+
+        <!-- Custom font upload -->
+        <label class="upload" for="font_file" id="font_upload_area">
+          <div class="upload-hint">Upload custom font <span style="color:var(--text-tertiary);font-weight:400">TTF/OTF, max 2 MB</span></div>
+        </label>
+        <input type="file" id="font_file" accept=".ttf,.otf"
+               style="display:none" onchange="uploadFont(this)"/>
+      </div>
+    </div>
+
+  </div><!-- end theme pane -->
+
+</div><!-- end #app -->
+
+<!-- Sticky apply bar for confirmations -->
+<div class="sticky-apply hide" id="sticky-apply">
+  <div class="sticky-apply-inner">
+    <div class="apply-confirm" id="apply-confirm">Applied</div>
+  </div>
+</div>
+
+<!-- Live updates are sent immediately while editing -->
+
+<!-- Bottom tab bar — thumb-reachable, fixed, always visible on a phone -->
+<nav class="tabs">
+  <button class="tab" id="t_home"     onclick="tab('home')"><span class="ic" style="width:20px;height:20px;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>Home</button>
+  <button class="tab on" id="t_remote"   onclick="tab('remote')"><span class="ic" style="width:20px;height:20px;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span>Remote</button>
+  <button class="tab"    id="t_settings" onclick="tab('settings')"><span class="ic" style="width:20px;height:20px;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.17 15a1.65 1.65 0 0 0-1.51-1H2a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.17 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.17a1.65 1.65 0 0 0 1-1.51V2a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>Settings</button>
+  <button class="tab"    id="t_theme"    onclick="tab('theme')"><span class="ic" style="width:20px;height:20px;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20 10 10 0 0 1 0-20z" fill="currentColor" opacity="0.2"/><path d="M12 2a10 10 0 0 0 0 20 10 10 0 0 0 0-20z" fill="currentColor" opacity="0.1"/></svg></span>Theme</button>
+</nav>
+
+<style id="dyn_fonts"></style>
+<script src="/admin.js"></script>
+
+<!-- Background Adjustment Modal -->
+<div id="bg_adjust_modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:1000;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--bg-elevated);border-radius:var(--r-xl);width:100%;max-width:500px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden">
+    <div style="padding:20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <h3 style="font-size:18px;font-weight:700;color:var(--text);margin:0">Adjust Background</h3>
+      <button onclick="closeBgAdjustModal()" style="background:none;border:none;color:var(--text-secondary);cursor:pointer;padding:8px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <!-- Preview Area -->
+    <div id="bg_preview_container" style="flex:1;min-height:300px;background:var(--bg-sunken);position:relative;overflow:hidden;touch-action:none">
+      <div id="bg_preview_image" style="position:absolute;width:100%;height:100%;background-size:cover;background-position:center;background-repeat:no-repeat;transform-origin:center center;transition:transform 0.1s ease-out"></div>
+      <div style="position:absolute;bottom:12px;left:12px;right:12px;background:rgba(0,0,0,0.6);color:white;padding:8px 12px;border-radius:8px;font-size:12px;text-align:center">
+        Drag to move • Scroll to zoom • Ctrl+scroll to rotate • Pinch to zoom (touch)
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div style="padding:20px;border-top:1px solid var(--border);display:flex;gap:12px">
+      <button onclick="resetBgTransform()" style="flex:1;padding:12px;background:var(--bg-sunken);border:1px solid var(--border);border-radius:var(--r-md);color:var(--text);font-weight:600;cursor:pointer">Reset</button>
+      <button onclick="applyBgTransform()" style="flex:1;padding:12px;background:var(--primary);border:none;border-radius:var(--r-md);color:white;font-weight:600;cursor:pointer">Apply</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

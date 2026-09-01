@@ -1,0 +1,1 @@
+"""Audio module for sound playback and generation."""

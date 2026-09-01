@@ -1,0 +1,55 @@
+<RCC>
+    <qresource prefix="/">
+        <!-- Root QML -->
+        <file alias="app/qml/App.qml">../../ui/App.qml</file>
+        <file alias="app/qml/MainDisplay.qml">../../ui/MainDisplay.qml</file>
+        <file alias="app/qml/DisplayView.qml">../../ui/DisplayView.qml</file>
+        <file alias="app/qml/BackgroundDisplay.qml">../../ui/BackgroundDisplay.qml</file>
+        <file alias="app/qml/LogoComponent.qml">../../ui/LogoComponent.qml</file>
+        <file alias="app/qml/CategoryBadge.qml">../../ui/CategoryBadge.qml</file>
+        <file alias="app/qml/NowServingLabel.qml">../../ui/NowServingLabel.qml</file>
+        <file alias="app/qml/ServingNumber.qml">../../ui/ServingNumber.qml</file>
+        <file alias="app/qml/AccentUnderline.qml">../../ui/AccentUnderline.qml</file>
+        <file alias="app/qml/WelcomeSplash.qml">../../ui/WelcomeSplash.qml</file>
+        <file alias="app/qml/CustomerSiteQrOverlay.qml">../../ui/CustomerSiteQrOverlay.qml</file>
+        <file alias="app/qml/CadreComponent.qml">../../ui/CadreComponent.qml</file>
+
+        <!-- Global singleton -->
+        <file alias="app/qml/global/DisplayState.qml">../../ui/global/DisplayState.qml</file>
+        <file alias="app/qml/global/qmldir">../../ui/global/qmldir</file>
+
+        <!-- Assets -->
+        <file alias="app/res/image/genical.jpg">../../resources/logos/genical.jpg</file>
+        <file alias="app/res/image/favicon.ico">../../resources/icons/favicon.ico</file>
+        <file alias="app/res/image/noise_texture.png">../../resources/backgrounds/noise_texture.png</file>
+
+        <!-- Backgrounds — Food -->
+        <file alias="app/res/image/1F.png">../../resources/backgrounds/1F.png</file>
+        <file alias="app/res/image/2F.png">../../resources/backgrounds/2F.png</file>
+        <file alias="app/res/image/3F.png">../../resources/backgrounds/3F.png</file>
+        <file alias="app/res/image/4F.png">../../resources/backgrounds/4F.png</file>
+        <file alias="app/res/image/5F.png">../../resources/backgrounds/5F.png</file>
+        <file alias="app/res/image/6F.png">../../resources/backgrounds/6F.png</file>
+
+        <!-- Backgrounds — Professional -->
+        <file alias="app/res/image/1P.png">../../resources/backgrounds/1P.png</file>
+        <file alias="app/res/image/2P.png">../../resources/backgrounds/2P.png</file>
+        <file alias="app/res/image/3P.png">../../resources/backgrounds/3P.png</file>
+        <file alias="app/res/image/4P.png">../../resources/backgrounds/4P.png</file>
+        <file alias="app/res/image/5P.png">../../resources/backgrounds/5P.png</file>
+
+        <!-- Backgrounds — Coffee -->
+        <file alias="app/res/image/1C.png">../../resources/backgrounds/1C.png</file>
+        <file alias="app/res/image/2C.png">../../resources/backgrounds/2C.png</file>
+        <file alias="app/res/image/3C.png">../../resources/backgrounds/3C.png</file>
+        <file alias="app/res/image/4C.png">../../resources/backgrounds/4C.png</file>
+        <file alias="app/res/image/5C.png">../../resources/backgrounds/5C.png</file>
+
+        <!-- Fonts: Custom display fonts -->
+        <file alias="app/res/font/Barriecito-Regular.ttf">../../resources/fonts/Barriecito-Regular.ttf</file>
+        <file alias="app/res/font/DTGetaiGroteskDisplay-Black.otf">../../resources/fonts/DTGetaiGroteskDisplay-Black.otf</file>
+        <file alias="app/res/font/Gluten-Regular.ttf">../../resources/fonts/Gluten-Regular.ttf</file>
+        <file alias="app/res/font/LCMogi-A.otf">../../resources/fonts/LCMogi-A.otf</file>
+        <file alias="app/res/font/Manosque-Regular.otf">../../resources/fonts/Manosque-Regular.otf</file>
+    </qresource>
+</RCC>
